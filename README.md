@@ -141,4 +141,3 @@ Add a license file if redistribution or reuse is planned.
 
 ## Author
 Sarah Laroui
-
