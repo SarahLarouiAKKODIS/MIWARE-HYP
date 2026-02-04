@@ -37,7 +37,7 @@ NIR_NM = 865.0
 SWIR1_NM = 1610.0
 
 # Seuil MNDWI pour "eau" (à ajuster)
-MNDWI_TH = 0.15
+MNDWI_TH = 0.55
 
 NODATA_F32 = -9999.0
 TOL_NM_FIXED = 12.0

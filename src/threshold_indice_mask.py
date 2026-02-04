@@ -86,37 +86,6 @@ def otsu_threshold(values, nbins=512):
     return float(centers[idx])
 
 
-def make_legend_png(rgb, out_png, thr, method, index_name):
-    h, w, _ = rgb.shape
-    pad = 240
-    canvas = Image.new("RGB", (w, h + pad), (255, 255, 255))
-    canvas.paste(Image.fromarray(rgb, "RGB"), (0, 0))
-
-    draw = ImageDraw.Draw(canvas)
-    try:
-        font = ImageFont.truetype("DejaVuSans.ttf", 18)
-        font_b = ImageFont.truetype("DejaVuSans.ttf", 22)
-    except:
-        font = ImageFont.load_default()
-        font_b = ImageFont.load_default()
-
-    draw.text((12, h + 10), f"Masque {index_name} – zones analysées", fill=(0, 0, 0), font=font_b)
-    draw.text((12, h + 46), f"Seuil = {thr:.4f}  |  méthode = {method}", fill=(0, 0, 0), font=font)
-
-    items = [
-        (COLOR_HIGH, f"{index_name} ≥ seuil  → classe HIGH"),
-        (COLOR_LOW,  f"{index_name} < seuil  → classe LOW"),
-        (COLOR_NODATA, "NoData / hors analyse (non-veg, eau, exclus)"),
-    ]
-
-    y0 = h + 90
-    for i, (col, txt) in enumerate(items):
-        y = y0 + i * 50
-        draw.rectangle([12, y, 36, y + 24], fill=col, outline=(0, 0, 0))
-        draw.text((50, y + 2), txt, fill=(0, 0, 0), font=font)
-
-    canvas.save(out_png)
-
 
 def parse_method(method_str: str):
     """

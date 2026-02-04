@@ -63,8 +63,10 @@ def compare_pixels(
 # Exemple d'utilisation
 if __name__ == "__main__":
 
-    Mask_result = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/Water_indice_outputs/enmap_salsigne_WATER_MASK.tiff"
-    Mask_EnMap = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/quality_layer_colored_crop.tif"
+    # Mask_result = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/Water_indice_outputs/enmap_salsigne_WATER_MASK.tiff"
+    # Mask_EnMap = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/quality_layer_colored_crop.tif"
+    Mask_result ="/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/Water_indice_outputs_all_image/enmap_salsigne_WATER_MASK.tiff"
+    Mask_EnMap = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/mask_enmap_allimage_water.tiff"
     res = compare_pixels(
         Mask_result,
         Mask_EnMap,
