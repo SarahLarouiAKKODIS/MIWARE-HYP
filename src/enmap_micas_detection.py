@@ -119,7 +119,7 @@ with rasterio.open(tif_path) as src:
     # 1) Masque binaire mica probable (0 / 255)
     # ----------------------
     if has_bd1900:
-        mask_bool = (bd2200 > bd2200_thresh) & (bd1900 > bd1900_thresh)
+        mask_bool = (bd2200 > bd2200_thresh) & (bd1900 < bd1900_thresh)
     else:
         mask_bool = (bd2200 > bd2200_thresh)
 

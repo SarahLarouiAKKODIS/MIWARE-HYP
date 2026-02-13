@@ -22,3 +22,6 @@ spectral==0.24
 tifffile==2025.5.10
 tzdata==2025.3
 xarray==2025.6.1
+spectral==0.23.1
+numpy==1.26.4
+matplotlib==3.8.2

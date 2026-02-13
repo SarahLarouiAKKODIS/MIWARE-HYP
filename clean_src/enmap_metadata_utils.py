@@ -81,33 +81,15 @@ def parse_band_characterisation(xml_path: str | Path) -> pd.DataFrame:
 # Sélection des bandes proches
 # ---------------------------
 
-def closest_bands(df: pd.DataFrame, targets_nm: list[float], mineral_name: str | None = None) -> pd.DataFrame:
+def closest_band_dict(df: pd.DataFrame, targets_nm: list[float]) -> dict[float, tuple[int, float]]:
     """
-    Pour chaque longueur d’onde cible (nm), trouve la bande EnMAP la plus proche.
+    Retourne {target_nm: (band_id, wavelength_nm)}
     """
-    out = []
+    out = {}
     for t in targets_nm:
         idx = (df["wavelength_nm"] - float(t)).abs().idxmin()
-        out.append(
-            {
-                "mineral": mineral_name,
-                "target_nm": float(t),
-                "band_id": int(df.loc[idx, "band_id"]),
-                "wavelength_nm": float(df.loc[idx, "wavelength_nm"]),
-                "fwhm_nm": float(df.loc[idx, "fwhm_nm"]) if pd.notna(df.loc[idx, "fwhm_nm"]) else None,
-            }
+        out[float(t)] = (
+            int(df.loc[idx, "band_id"]),
+            float(df.loc[idx, "wavelength_nm"])
         )
-    return pd.DataFrame(out)
-
-
-def pick_bands_for_minerals(df: pd.DataFrame, minerals_targets_nm: dict[str, list[float]]) -> pd.DataFrame:
-    """
-    Applique closest_bands à une liste de minéraux :
-      { "olivine": [860,1050,1280,2000], "autre": [...] }
-    """
-    frames = []
-    for mineral, targets in minerals_targets_nm.items():
-        if not targets:
-            continue
-        frames.append(closest_bands(df, targets, mineral_name=mineral))
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    return out

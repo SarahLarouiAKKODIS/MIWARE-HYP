@@ -2,7 +2,7 @@ import os
 import numpy as np
 import rasterio
 import tifffile
-from enmap_indices_calculation_utils import load_wavelengths_from_csv, compute_auto_tol_nm, nearest_band_index, safe_norm_diff, write_imagej_tiff, msavi, read_scale_and_clip_bands
+from enmap_indices_calculation_utils import load_wavelengths_from_csv, compute_auto_tol_nm, nearest_band_index, safe_norm_diff, write_imagej_tiff, read_scale_and_clip_bands
 
 
 # ============================================================
