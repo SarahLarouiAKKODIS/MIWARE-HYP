@@ -13,7 +13,7 @@ if df.empty:
         "et que les balises bandID/wavelengthCenterOfBand existent."
     )
 
-df.to_csv(Path_data + "enmap_bands_full.csv", index=False)
+df.to_csv("/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/enmap_bands_full2.csv", index=False)
 print("✅ Table complète enregistrée : enmap_bands_full.csv")
 print(df.head(10).to_string(index=False))
 

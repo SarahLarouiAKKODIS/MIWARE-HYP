@@ -41,15 +41,15 @@ def crop_hyperspectral_tif(
 
 if __name__ == "__main__":
     # À MODIFIER
-    Path_data = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/"
+    # Path_data = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/"
     # input_tif = Path_data + "SALSIGNE/dims_op_oc_oc-en_702726665_1/ENMAP.HSI.L2A/ENMAP01-____L2A-DT0000165944_20251129T112021Z_002_V010505_20251130T042131Z/ENMAP01-____L2A-DT0000165944_20251129T112021Z_002_V010505_20251130T042131Z-SPECTRAL_IMAGE.TIF"
     # output_tif = Path_data+ "image_hyperspectrale_crop.tif"
 
     # input_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/image_hyperspectrale_clean.tif"
     # output_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/image_hyperspectrale_clean_crop.tif"
-
-    input_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/quality_layer_colored.tif"
-    output_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/quality_layer_colored_crop.tif"
+    name = "ENMAP01-____L2A-DT0000165944_20251129T112021Z_002_V010505_20251130T042131Z-SPECTRAL_IMAGE.TIF"
+    input_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/SALSIGNE/dims_op_oc_oc-en_702726665_1/ENMAP.HSI.L2A/ENMAP01-____L2A-DT0000165944_20251129T112021Z_002_V010505_20251130T042131Z/" + name
+    output_tif = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/Cropped_masks/" + name
 
     crop_hyperspectral_tif(input_tif, output_tif)
     print("✅ Crop enregistré :", output_tif)

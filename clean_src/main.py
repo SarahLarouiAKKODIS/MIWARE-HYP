@@ -1,9 +1,12 @@
-from enmap_band_utils import recover_wavelet_band_info
+from utils.enmap_band_utils import recover_wavelet_band_info
 from enmap_quality_mask import mask_enmap_hyperspectral_cube
-from enmap_crop_image import crop_hyperspectral_tif
+from utils.enmap_crop_image import crop_hyperspectral_tif
 from enmap_water_indices import compute_mndwi_and_water_mask
 from enmap_vegetation_indices import compute_vegetation_indices_wdi_vii
 
+from preprocessing.mask_enmap import apply_water_veg_mask
+from preprocessing.enmap_clean_bands import clean_bands_enmap_from_csv
+from preprocessing.spectral_smoothing import savgol_smooth_and_normalize
 
 ## 1) wavelet band information recovery
 
@@ -79,3 +82,46 @@ res = compute_vegetation_indices_wdi_vii(
 )
 
 print(res["paths"].keys())
+
+####################################################################################
+
+enmap_masked = Path_res + "enmap_masked.tif"
+enmap_masked_cleanbands = Path_res + "enmap_masked_cleanbands.tif"
+clean_wavelengths_csv = Path_res + "enmap_clean_bands_full.csv"
+
+apply_water_veg_mask(
+    img_path=image_hyperspectrale_clean_crop,
+    water_mask_path=Water_results_dir + "/enmap_salsigne_WATER_MASK.tiff",
+    veg_mask_path=Vegetation_results_dir + "/enmap_salsigne_VEG_MASK.tiff",
+    output_path=enmap_masked
+)
+
+
+summary = clean_bands_enmap_from_csv(
+    img_path=enmap_masked,
+    bands_csv=wavelengths_csv,
+    output_path=enmap_masked_cleanbands,
+    output_bands_csv=clean_wavelengths_csv,   # <- le CSV corrigé
+    band_id_is_one_based=True,           # comme ton CSV actuel
+    csv_band_id_is_one_based_out=True,    # sortie en 1..N (recommandé)
+    drop_edges=(2, 2),
+    exclude_ranges_nm=[(0,420), (1340,1460),(1800,1960),(2420,2445.5)],
+    use_fwhm_margin=True,
+    fwhm_factor=0.5
+)
+
+
+print(summary["nbands_in"], "->", summary["nbands_out"])
+print("Removed wavelengths (nm):", summary["removed_wavelengths_nm"])
+print("Bands out:", summary["nbands_out"])
+
+enmap_masked_cleanbands_smooth_norm = Path_res + "enmap_masked_cleanbands_smooth_norm.tif"
+
+savgol_smooth_and_normalize(
+    img_path=enmap_masked_cleanbands,
+    output_path=enmap_masked_cleanbands_smooth_norm,
+    window_length=9,   # 7 ou 9 = “léger” pour EnMAP
+    polyorder=2,
+    normalize="l2"     # "l2" conseillé pour SAM/MF
+    
+)
