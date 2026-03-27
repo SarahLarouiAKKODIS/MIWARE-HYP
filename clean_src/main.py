@@ -105,7 +105,7 @@ summary = clean_bands_enmap_from_csv(
     band_id_is_one_based=True,           # comme ton CSV actuel
     csv_band_id_is_one_based_out=True,    # sortie en 1..N (recommandé)
     drop_edges=(2, 2),
-    exclude_ranges_nm=[(0,420), (1340,1460),(1800,1960),(2420,2445.5)],
+    exclude_ranges_nm=[(1340,1460),(1800,1960)],
     use_fwhm_margin=True,
     fwhm_factor=0.5
 )

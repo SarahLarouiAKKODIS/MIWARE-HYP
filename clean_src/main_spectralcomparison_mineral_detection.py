@@ -16,18 +16,18 @@ enmap_masked_cleanbands_smooth_norm = Path_res + "enmap_masked_cleanbands_smooth
 out_dir = Path_res + "Spectral_mineral_detection/"
 os.makedirs(out_dir, exist_ok=True)
 
-mineral = "chalcopyrite"
+mineral = "arsenopyrite"
 
 ## RELAB
 
-# ## SAM + MF
-# sam_out, mf_out, combo_out, used_refs = run_single_mineral_detection_from_tab_refs(
-#     img_tif_path=enmap_masked_cleanbands_smooth_norm,
-#     bands_csv=clean_wavelengths_csv,
-#     ref_root_dir=spectral_library_dir,
-#     mineral=mineral,
-#     out_dir=out_dir + mineral
-# )
+## SAM + MF
+sam_out, mf_out, combo_out, used_refs = run_single_mineral_detection_from_tab_refs(
+    img_tif_path=enmap_masked_cleanbands_smooth_norm,
+    bands_csv=clean_wavelengths_csv,
+    ref_root_dir=spectral_library_dir,
+    mineral=mineral,
+    out_dir=out_dir + "sam_mf/" + mineral
+)
 
 ## SAM + ACE
 sam_out, ace_out, combo_out, used_refs = run_single_mineral_ace_from_tab_refs(
@@ -35,6 +35,6 @@ sam_out, ace_out, combo_out, used_refs = run_single_mineral_ace_from_tab_refs(
     bands_csv=clean_wavelengths_csv,
     ref_root_dir=spectral_library_dir,
     mineral=mineral,
-    out_dir=out_dir + mineral
+    out_dir=out_dir + "sam_ace/" + mineral
 )
 
