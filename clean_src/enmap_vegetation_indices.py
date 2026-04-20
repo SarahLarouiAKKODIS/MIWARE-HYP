@@ -48,7 +48,7 @@ def compute_vegetation_indices_wdi_vii(
     # Masque végétation
     ndvi_th: float = 0.3,
     # Lecture / mise à l’échelle
-    scale: float = 10000.0,
+    scale: float | None = None,
     min_val: float = 0.0,
     max_val: float = 1.2,
     nodata_f32: float = -9999.0,
@@ -83,10 +83,19 @@ def compute_vegetation_indices_wdi_vii(
             raise ValueError(f"Aucune bande trouvée dans [{lo}, {hi}] nm")
         return idx
 
-    def scale_clip_to_reflectance(arr: np.ndarray, scale_: float, min_: float, max_: float) -> np.ndarray:
-        out = arr.astype(np.float32) / float(scale_)
+    def scale_clip_to_reflectance(
+        arr: np.ndarray,
+        scale_: float | None,
+        min_: float,
+        max_: float
+    ) -> np.ndarray:
+        out = arr.astype(np.float32)
+
+        if scale_ is not None:
+            out = out / float(scale_)
+
         out = np.where(np.isfinite(out), out, np.nan).astype(np.float32)
-        out = np.clip(out, min_, max_).astype(np.float32)
+        out[(out < min_) | (out > max_)] = np.nan
         return out
 
     def compute_vii_zhang2012_blockwise(

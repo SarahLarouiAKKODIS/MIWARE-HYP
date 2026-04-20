@@ -5,19 +5,28 @@ from mineral_detection.carbonates_detection import detect_carbonates_bd2330_bd25
 from mineral_detection.micas_detection import detect_micas_bd2200_clean
 from mineral_detection.argiles_detection import detect_argiles_bd2200_clean
 from mineral_detection.oxydesFer_detection import detect_iron_oxides_bd900_redness_clean
+from preprocessing.spectral_smoothing import savgol_smooth_and_normalize
 
-Path_res = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE/"
-
-enmap_masked_cleanbands_smooth_norm = Path_res + "enmap_masked_cleanbands_smooth_norm.tif"
-
+Path_res = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE_crop/"
 clean_wavelengths_csv = Path_res + "enmap_clean_bands_full.csv"
+image_hyperspectrale_cleanbands = Path_res + "image_hyperspectrale_cleanbands.tif"
+
+## Lissage (optionel mais mieux)
+image_hyperspectrale_cleanbands_smooth = Path_res + "image_hyperspectrale_cleanbands_smooth.tif"
+
+savgol_smooth_and_normalize(
+    img_path=image_hyperspectrale_cleanbands,
+    output_path=image_hyperspectrale_cleanbands_smooth,
+    normalize=None
+)
+
 
 ## 4) Mineral detection
 
 Olivine_results_dir= Path_res + "Mineral_detection/olivine/"
 
 result = detect_olivine_bd1050_bd2000_clean(
-        tif_path=enmap_masked_cleanbands_smooth_norm,
+        tif_path=image_hyperspectrale_cleanbands_smooth,
         bands_csv=clean_wavelengths_csv,
         outdir=Olivine_results_dir,
         sampling_mode="nearest", # "nearest"
@@ -27,7 +36,7 @@ result = detect_olivine_bd1050_bd2000_clean(
 Pyroxene_results_dir= Path_res + "Mineral_detection/pyroxene/"
 
 result = detect_pyroxene_bd1um_bd2um_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Pyroxene_results_dir,
     sampling_mode="nearest"
@@ -36,7 +45,7 @@ result = detect_pyroxene_bd1um_bd2um_clean(
 Amphiboles_dir=Path_res + "Mineral_detection/amphiboles/"
 
 result = detect_amphiboles_bd2320_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Amphiboles_dir,
     sampling_mode="nearest", # "nearest"
@@ -45,7 +54,7 @@ result = detect_amphiboles_bd2320_clean(
 Carbonates_dir=Path_res + "Mineral_detection/carbonates/"
 
 result = detect_carbonates_bd2330_bd2500_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Carbonates_dir,
     sampling_mode="nearest" # "linear"
@@ -54,7 +63,7 @@ result = detect_carbonates_bd2330_bd2500_clean(
 Micas_dir=Path_res + "Mineral_detection/micas/"
 
 result = detect_micas_bd2200_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Micas_dir,
     sampling_mode="linear", # "nearest"
@@ -63,7 +72,7 @@ result = detect_micas_bd2200_clean(
 Argiles_dir=Path_res + "Mineral_detection/argiles/"
 
 result = detect_argiles_bd2200_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Argiles_dir,
     sampling_mode="linear", # "nearest"
@@ -73,7 +82,7 @@ result = detect_argiles_bd2200_clean(
 Iron_oxides_dir=Path_res + "Mineral_detection/iron_oxides/"
 
 result = detect_iron_oxides_bd900_redness_clean(
-    tif_path=enmap_masked_cleanbands_smooth_norm,
+    tif_path=image_hyperspectrale_cleanbands_smooth,
     bands_csv=clean_wavelengths_csv,
     outdir=Iron_oxides_dir,
     sampling_mode="linear", # "nearest"

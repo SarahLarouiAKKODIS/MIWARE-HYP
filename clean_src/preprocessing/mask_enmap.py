@@ -11,7 +11,10 @@ def apply_water_veg_mask(
     """
     Applique un masque eau + végétation à une image hyperspectrale.
 
-    Pixels exclus si valeur = 255 ou -1 dans l'un des masques.
+    Pixels exclus si valeur = 255 ou -1 dans l'un des masques:
+    eau (255)
+    végétation (255)
+    nodata (-1)
 
     Parameters
     ----------

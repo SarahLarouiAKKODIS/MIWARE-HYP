@@ -14,66 +14,43 @@ import numpy as np
 def read_scale_and_clip_bands(
     src,
     bands: dict,
-    scale: float,
+    scale: float | None,
     min_val: float,
     max_val: float,
     verbose: bool = True,
 ) -> dict[str, np.ndarray]:
-    """
-    Lit plusieurs bandes raster, applique le scale factor uniquement
-    sur les pixels valides (non-NaN), puis seuillage -> NaN.
-
-    Parameters
-    ----------
-    src : rasterio.DatasetReader
-        Dataset ouvert avec rasterio.open(...)
-    bands : dict
-        Dictionnaire {nom_bande: index_bande} (index 1-based)
-        ex: {"RED": 12, "GREEN": 8, "NIR": 34}
-    scale : float
-        Facteur d'échelle (ex: 10000.0)
-    min_val, max_val : float
-        Bornes physiques après scaling (ex: 0.0, 1.2)
-    verbose : bool
-        Si True, affiche les stats par bande
-
-    Returns
-    -------
-    out : dict[str, np.ndarray]
-        Dictionnaire {nom_bande: tableau 2D float32 avec NaN}
-    """
-
     out = {}
 
     for name, band_index in bands.items():
-
-        # 1) lecture
         band = src.read(band_index).astype(np.float32)
+
+        if src.nodata is not None:
+            band = np.where(band == src.nodata, np.nan, band)
 
         if verbose:
             print(f"\n{name}")
             print("  nanmin/nanmax (avant scale):",
                   np.nanmin(band), np.nanmax(band))
 
-        # 2) masque validité
         valid = np.isfinite(band)
 
-        # 3) scale uniquement sur pixels valides
-        band[valid] /= float(scale)
+        if scale is not None:
+            band[valid] /= float(scale)
 
-        if verbose:
-            print("  nanmin/nanmax (après scale):",
-                  np.nanmin(band), np.nanmax(band))
+            if verbose:
+                print("  nanmin/nanmax (après scale):",
+                      np.nanmin(band), np.nanmax(band))
 
-        # 4) seuillage physique
         band[(band < min_val) | (band > max_val)] = np.nan
 
         if verbose:
             finite = np.isfinite(band)
-            print("  nanmin/nanmax (après seuil):",
-                  np.nanmin(band), np.nanmax(band))
-            print("  pixels valides:",
-                  finite.sum(), "/", finite.size)
+            if finite.any():
+                print("  nanmin/nanmax (après seuil):",
+                      np.nanmin(band), np.nanmax(band))
+            else:
+                print("  nanmin/nanmax (après seuil): aucun pixel valide")
+            print("  pixels valides:", finite.sum(), "/", finite.size)
 
         out[name] = band
 

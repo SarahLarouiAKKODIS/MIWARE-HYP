@@ -27,7 +27,7 @@ def compute_mndwi_and_water_mask(
     auto_convert_um_to_nm: bool = True,
     use_auto_tol: bool = True,
     tol_nm_fixed: float = 12.0,
-    scale: float = 10000.0,
+    scale: float | None = None,
     min_val: float = 0.0,
     max_val: float = 1.2,
     nodata_f32: float = -9999.0,
