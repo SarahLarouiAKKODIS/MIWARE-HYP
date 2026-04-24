@@ -7,8 +7,8 @@
       "CloudShadow_mask" : "//home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/CMA/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z-QL_QUALITY_CLOUDSHADOW.TIF",
       "Snow_mask" : "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/CMA/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z-QL_QUALITY_SNOW.TIF",
       "TestFlags_mask" : "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/CMA/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z/ENMAP01-____L2A-DT0000183870_20260317T112025Z_002_V010506_20260318T023754Z-QL_QUALITY_TESTFLAGS.TIF",
-      "crop" : true,
+      "forest_species_mask" : "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/BDFORET_v2/Haute-Vienne_Corrèze_fusion/FORMATION_VEGETALE.shp",
+      "crop" : false,
     "Site_coords" : [477, 365, 1520, 946],
-
-    "Path_res" : "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/CMA_crop/"
+    "Path_res" : "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/CMA/"
 }
