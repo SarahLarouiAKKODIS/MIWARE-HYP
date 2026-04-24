@@ -39,9 +39,10 @@ def reclassify_gt_to_stress_classes(gt_mask, stress_groups, excluded_labels=(0, 
 # 4) COULEURS
 # ============================================================
 
-# Couleurs pour les 18 classes GT (0 = blanc)
+# Couleurs pour les 21 classes GT (0 = fond / no data)
 GT_COLORS = [
     "#ffffff",  # 0 = fond / no data
+
     "#1b9e77",  # 1 Sapin, épicéa
     "#d95f02",  # 2 Châtaignier
     "#7570b3",  # 3 Chênes décidus
@@ -59,9 +60,11 @@ GT_COLORS = [
     "#b15928",  # 15 Pin laricio, pin noir
     "#a6cee3",  # 16 Pin sylvestre
     "#33a02c",  # 17 Pins mélangés
-    "#e31a1c",  # 18 Robinier
+    "#ffcc00",  # 18 Pin maritime (jaune/orangé → pin distinct)
+    "#8dd3c7",  # 19 Pin à crochets, pin cembro (bleu-vert clair → alpin)
+    "#bc80bd",  # 20 Mélèze (violet clair → caduc conifère, distinct)
+    "#e31a1c",  # 21 Robinier (rouge → feuillu particulier)
 ]
-
 # Couleurs pour les 3 classes stress (0 = blanc)
 STRESS_COLORS = [
     "#ffffff",  # 0 = fond / exclu
@@ -151,7 +154,7 @@ if __name__ == "__main__":
     # ============================================================
 
     # MASQUE FOREST ESSENCES
-    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne.json"
+    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/cma.json"
     config = load_config(config_path)
 
     Path_res = Path(config["Path_res"]) 
