@@ -18,7 +18,10 @@
     "Pin laricio, pin noir": 15,
     "Pin sylvestre": 16,
     "Pins mélangés": 17,
-    "Robinier": 18
+    "Pin maritime" : 18,
+    "Pin à crochets, pin cembro" : 19,
+    "Mélèze" : 20,
+    "Robinier": 21
   },
   "STRESS_GROUPS": {
     "1": [
@@ -26,7 +29,8 @@
       "Chênes sempervirents",
       "Douglas",
       "Pin laricio, pin noir",
-      "Pin sylvestre"
+      "Pin sylvestre",
+      "Pin maritime"
     ],
     "2": [
       "Conifères",
@@ -35,13 +39,15 @@
       "Pin autre",
       "Pin d'Alep",
       "Pins mélangés",
-      "Robinier"
+      "Robinier",
+      "Pin à crochets, pin cembro"
     ],
     "3": [
       "Châtaignier",
       "Chênes décidus",
       "Hêtre",
-      "Peuplier"
+      "Peuplier",
+      "Mélèze"
     ]
   },
   "STRESS_CLASS_NAMES": {
