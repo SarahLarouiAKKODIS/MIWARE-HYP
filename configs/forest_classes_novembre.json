@@ -1,0 +1,61 @@
+{
+  "CLASS_FIELD": "ESSENCE",
+  "CLASS_MAP": {
+    "Sapin, épicéa": 1,
+    "Châtaignier": 2,
+    "Chênes décidus": 3,
+    "Chênes sempervirents": 4,
+    "Conifères": 5,
+    "Douglas": 6,
+    "Feuillus": 7,
+    "Hêtre": 8,
+    "Mixte": 9,
+    "NC": 10,
+    "NR": 11,
+    "Peuplier": 12,
+    "Pin autre": 13,
+    "Pin d'Alep": 14,
+    "Pin laricio, pin noir": 15,
+    "Pin sylvestre": 16,
+    "Pins mélangés": 17,
+    "Pin maritime" : 18,
+    "Pin à crochets, pin cembro" : 19,
+    "Mélèze" : 20,
+    "Robinier": 21
+  },
+  "STRESS_GROUPS": {
+    "1": [
+      "Sapin, épicéa",
+      "Douglas"
+    ],
+    "2": [
+      "Chênes sempervirents",
+      "Pin laricio, pin noir",
+      "Pin sylvestre",
+      "Pin maritime",
+      "Conifères",
+      "Pin autre",
+      "Pin d'Alep",
+      "Pins mélangés",
+      "Pin à crochets, pin cembro"
+    ],
+    "3": [
+      "Feuillus",
+      "Mixte"
+    ],
+    "4": [
+      "Châtaignier",
+      "Chênes décidus",
+      "Hêtre",
+      "Mélèze",
+      "Robinier",
+      "Peuplier"
+    ]
+  },
+  "STRESS_CLASS_NAMES": {
+    "1": "Pas stressée",
+    "2": "Peu stressée",
+    "3": "Moyennement stressée",
+    "4": "Très stressée"
+  }
+}
