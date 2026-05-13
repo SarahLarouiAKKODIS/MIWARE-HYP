@@ -208,13 +208,12 @@ def rasterize_forest_classes(
 if __name__ == "__main__":
 
     from pathlib import Path
-    from commun_functions import load_config
+    from utils.commun_functions import load_config
 
-    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/cma.json"
-    config_forest_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/forest_classes.json"
+    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/abbaretz.json"
 
     config = load_config(config_path)
-    config_forest = load_config(config_forest_path)
+    config_forest = load_config(config["config_forest_path"])
 
     Path_res = Path(config["Path_res"]) / "Forest"
     Path_res.mkdir(parents=True, exist_ok=True)

@@ -1,39 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
-import rasterio
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from pathlib import Path
-from commun_functions import load_config
-
-
-
-# ============================================================
-# 3) OUTILS
-# ============================================================
-
-def read_mask(mask_path):
-    with rasterio.open(mask_path) as src:
-        return src.read(1)
-
-
-def reclassify_gt_to_stress_classes(gt_mask, stress_groups, excluded_labels=(0, 10, 11)):
-    """
-    Reclassifie le masque GT original en 3 classes de stress.
-    Les pixels non mappés ou exclus sont mis à 0.
-    """
-    out = np.zeros_like(gt_mask, dtype=np.uint8)
-
-    for stress_id, original_ids in stress_groups.items():
-        for original_id in original_ids:
-            out[gt_mask == original_id] = stress_id
-
-    for lab in excluded_labels:
-        out[gt_mask == lab] = 0
-
-    return out
-
+from utils.commun_functions import load_config, read_mask
+from utils.classification_functions import reclassify_gt_to_stress_classes
+from utils.display import print_stress_class_distribution
 
 # ============================================================
 # 4) COULEURS
@@ -65,14 +38,22 @@ GT_COLORS = [
     "#bc80bd",  # 20 Mélèze (violet clair → caduc conifère, distinct)
     "#e31a1c",  # 21 Robinier (rouge → feuillu particulier)
 ]
-# Couleurs pour les 3 classes stress (0 = blanc)
+# Couleurs pour les 4 classes stress (0 = blanc)
 STRESS_COLORS = [
     "#ffffff",  # 0 = fond / exclu
-    "#2ca25f",  # 1 peu stressée
-    "#fec44f",  # 2 moyennement stressée
-    "#de2d26",  # 3 très stressée
+    "#99d8c9",  # 1 pas stressée
+    "#2ca25f",  # 2 peu stressée
+    "#fec44f",  # 3 moyennement stressée
+    "#de2d26",  # 4 très stressée
 ]
 
+# STRESS_COLORS = [
+#     "#ffffff",  # 0 = fond / exclu
+#     "#31a354",  # 1 pas stressée (vert)
+#     "#ffd92f",  # 2 peu stressée (jaune)
+#     "#fd8d3c",  # 3 moyennement stressée (orange)
+#     "#de2d26",  # 4 très stressée (rouge)
+# ]
 
 # ============================================================
 # 5) FIGURE
@@ -111,10 +92,10 @@ def plot_gt_and_stress_masks(gt_mask, stress_mask, output_path=None):
     )
 
     # -------------------------
-    # Masque 3 classes stress
+    # Masque 4 classes stress
     # -------------------------
-    axes[1].imshow(stress_mask, cmap=stress_cmap, vmin=0, vmax=3)
-    axes[1].set_title("Masque reclassé en 3 classes de stress")
+    axes[1].imshow(stress_mask, cmap=stress_cmap, vmin=0, vmax=4)
+    axes[1].set_title("Masque reclassé en 4 classes de stress")
     axes[1].axis("off")
 
     stress_legend_elements = []
@@ -165,8 +146,7 @@ if __name__ == "__main__":
     gt_mask = read_mask(gt_mask_path)
 
     ## CLASSES DES ESSENCES ET DES ETAT DE STRESSE   
-    config_forest_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/forest_classes.json"
-    config_forest = load_config(config_forest_path)
+    config_forest = load_config(config["config_forest_path"])
    
     # --- 1) Classes d'essences ---
     CLASS_MAP = config_forest["CLASS_MAP"]                 # nom -> id
@@ -193,6 +173,11 @@ if __name__ == "__main__":
         STRESS_GROUPS_LABELS,
         excluded_labels=(0, 10, 11)
     )
+
+    print_stress_class_distribution(
+    stress_mask,
+    stress_class_names=STRESS_CLASS_NAMES
+)
 
     print('stress_mask', stress_mask.shape)
     print('stress_mask', np.unique(stress_mask))
