@@ -113,7 +113,7 @@ def print_spatial_cv_results(cv_results, class_name_map=None):
         print(fr["classification_report"])
 
         print("\nImportance des variables :")
-        feature_names = ["NDVI", "NDRE", "GNDVI", "NDWI"]
+        feature_names = ["NDVI", "NDRE", "NDWI", "PRI", "ARI", "NBR"]
         for name, imp in zip(feature_names, fr["feature_importances"]):
             print(f"{name:6s} : {imp:.4f}")
 

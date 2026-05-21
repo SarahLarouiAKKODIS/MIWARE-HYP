@@ -3,8 +3,17 @@ import numpy as np
 
 from sklearn.model_selection import GroupKFold
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, cohen_kappa_score
 
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import (
+    accuracy_score,
+    balanced_accuracy_score,
+    confusion_matrix,
+    classification_report,
+    ConfusionMatrixDisplay,
+    cohen_kappa_score
+)
 
 # ============================================================
 # 5) RECLASSIFICATION DU MASQUE GT EN n CLASSES
@@ -244,4 +253,87 @@ def spatial_block_cv_random_forest(
     }
 
     return results
+
+
+
+
+def evaluate_classification_model(
+    model,
+    y_test,
+    y_pred,
+    feature_names=None
+):
+    """
+    Évalue un modèle de classification.
+
+    Parameters
+    ----------
+    model : modèle entraîné
+        Modèle possédant feature_importances_
+
+    y_test : array
+        Labels réels
+
+    y_pred : array
+        Labels prédits
+
+    feature_names : list
+        Noms des variables
+    """
+
+    # Accuracy
+    acc = accuracy_score(y_test, y_pred)
+    print("Accuracy :", acc)
+
+    # Balanced accuracy
+    bal_acc = balanced_accuracy_score(y_test, y_pred)
+    print("Balanced accuracy :", bal_acc)
+
+    # Confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+
+    print("\nConfusion Matrix :")
+    print(cm)
+
+    # Classification report
+    print("\nClassification Report :")
+    print(classification_report(y_test, y_pred))
+
+    # Affichage matrice
+    ConfusionMatrixDisplay.from_predictions(
+        y_test,
+        y_pred,
+        cmap="Blues"
+    )
+
+    plt.title("Confusion Matrix")
+    plt.show()
+
+    # Importance des variables
+    if hasattr(model, "feature_importances_"):
+
+        importance = model.feature_importances_
+
+        print("\nFeature importance :")
+        print(importance)
+
+        # noms automatiques si non fournis
+        if feature_names is None:
+            feature_names = [
+                f"Feature_{i}"
+                for i in range(len(importance))
+            ]
+
+        plt.figure(figsize=(8, 4))
+
+        plt.bar(feature_names, importance)
+
+        plt.ylabel("Importance")
+        plt.title("Feature Importance")
+
+        plt.xticks(rotation=45)
+
+        plt.tight_layout()
+
+        plt.show()
 

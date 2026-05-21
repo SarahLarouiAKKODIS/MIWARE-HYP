@@ -25,8 +25,10 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
         "valid_pixels_mask": valid_pixels_mask,
         "finite ndvi": np.isfinite(indices_dict["ndvi"]),
         "finite ndre": np.isfinite(indices_dict["ndre"]),
-        "finite gndvi": np.isfinite(indices_dict["gndvi"]),
         "finite ndwi": np.isfinite(indices_dict["ndwi"]),
+        "finite pri": np.isfinite(indices_dict["pri"]),
+        "finite ari": np.isfinite(indices_dict["ari"]),
+        "finite nbr": np.isfinite(indices_dict["nbr"])
         }
 
         print("Debug conditions :")
@@ -38,8 +40,10 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
             valid_pixels_mask &
             np.isfinite(indices_dict["ndvi"]) &
             np.isfinite(indices_dict["ndre"]) &
-            np.isfinite(indices_dict["gndvi"]) &
-            np.isfinite(indices_dict["ndwi"])
+            np.isfinite(indices_dict["ndwi"]) &
+            np.isfinite(indices_dict["pri"]) &
+            np.isfinite(indices_dict["ari"]) &
+            np.isfinite(indices_dict["nbr"]) 
         )
 
         n = np.count_nonzero(mask)
@@ -52,12 +56,16 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
             "n_pixels": int(n),
             "ndvi": float(np.nanmean(indices_dict["ndvi"][mask])),
             "ndre": float(np.nanmean(indices_dict["ndre"][mask])),
-            "gndvi": float(np.nanmean(indices_dict["gndvi"][mask])),
             "ndwi": float(np.nanmean(indices_dict["ndwi"][mask])),
+            "pri": float(np.nanmean(indices_dict["pri"][mask])),
+            "ari": float(np.nanmean(indices_dict["ari"][mask])),
+            "nbr": float(np.nanmean(indices_dict["nbr"][mask])),
             "ndvi_std": float(np.nanstd(indices_dict["ndvi"][mask])),
             "ndre_std": float(np.nanstd(indices_dict["ndre"][mask])),
-            "gndvi_std": float(np.nanstd(indices_dict["gndvi"][mask])),
             "ndwi_std": float(np.nanstd(indices_dict["ndwi"][mask])),
+            "pri_std": float(np.nanstd(indices_dict["pri"][mask])),
+            "ari_std": float(np.nanstd(indices_dict["ari"][mask])),
+            "nbr_std": float(np.nanstd(indices_dict["nbr"][mask]))
         }
 
     return stats
@@ -84,7 +92,7 @@ def check_stress_coherence(stats):
 
     print("\n=== Vérification de cohérence des indices ===")
 
-    for index_name in ["ndvi", "ndre", "gndvi", "ndwi"]:
+    for index_name in ["ndvi", "ndre", "ndwi", "pri", "ari", "nbr"]:
         v1 = stats[1][index_name]
         v2 = stats[2][index_name]
         v3 = stats[3][index_name]
