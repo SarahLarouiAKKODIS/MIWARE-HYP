@@ -28,6 +28,7 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
         "finite ndwi": np.isfinite(indices_dict["ndwi"]),
         "finite pri": np.isfinite(indices_dict["pri"]),
         "finite ari": np.isfinite(indices_dict["ari"]),
+        "finite evi": np.isfinite(indices_dict["evi"]),
         "finite nbr": np.isfinite(indices_dict["nbr"])
         }
 
@@ -43,6 +44,7 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
             np.isfinite(indices_dict["ndwi"]) &
             np.isfinite(indices_dict["pri"]) &
             np.isfinite(indices_dict["ari"]) &
+            np.isfinite(indices_dict["evi"]) &
             np.isfinite(indices_dict["nbr"]) 
         )
 
@@ -59,12 +61,14 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
             "ndwi": float(np.nanmean(indices_dict["ndwi"][mask])),
             "pri": float(np.nanmean(indices_dict["pri"][mask])),
             "ari": float(np.nanmean(indices_dict["ari"][mask])),
+            "evi": float(np.nanmean(indices_dict["evi"][mask])),
             "nbr": float(np.nanmean(indices_dict["nbr"][mask])),
             "ndvi_std": float(np.nanstd(indices_dict["ndvi"][mask])),
             "ndre_std": float(np.nanstd(indices_dict["ndre"][mask])),
             "ndwi_std": float(np.nanstd(indices_dict["ndwi"][mask])),
             "pri_std": float(np.nanstd(indices_dict["pri"][mask])),
             "ari_std": float(np.nanstd(indices_dict["ari"][mask])),
+            "evi_std": float(np.nanstd(indices_dict["evi"][mask])),
             "nbr_std": float(np.nanstd(indices_dict["nbr"][mask]))
         }
 
@@ -77,39 +81,90 @@ def compute_mean_indices_per_group(indices_dict, group_mask, STRESS_CLASS_NAMES,
 
 def check_stress_coherence(stats):
     """
-    Vérifie la cohérence attendue :
-    - NDVI : pas stressée > peu stressée > moyenne > très stressée
-    - NDRE : pas stressée > peu stressée > moyenne > très stressée
-    - GNDVI : pas stressée > peu stressée > moyenne > très stressée
-    - NDWI (ta formule NIR-SWIR / NIR+SWIR) :
-      on attend généralement pas stressée > peu stressée > moyenne > très stressée
-      (plus proche de 0 si végétation moins stressée)
+    Vérifie la cohérence attendue entre les classes disponibles.
+
+    Ordre attendu :
+    1 = pas stressée
+    2 = peu stressée
+    3 = moyennement stressée
+    4 = très stressée
+
+    Attendu :
+    - NDVI, NDRE, NDWI, PRI, EVI, NBR : décroissants avec le stress
+    - ARI : croissant avec le stress
     """
-    required_ids = [1, 2, 3, 4]
-    if not all(i in stats for i in required_ids):
-        print("\nImpossible de tester la cohérence : une ou plusieurs classes manquent.")
+
+    class_names = {
+        1: "Pas stressée",
+        2: "Peu stressée",
+        3: "Moyennement stressée",
+        4: "Très stressée"
+    }
+
+    expected_order = [1, 2, 3, 4]
+    available_classes = [c for c in expected_order if c in stats]
+
+    if len(available_classes) < 2:
+        print("\nImpossible de tester la cohérence : moins de deux classes disponibles.")
         return
+
+    missing_classes = [c for c in expected_order if c not in stats]
 
     print("\n=== Vérification de cohérence des indices ===")
 
-    for index_name in ["ndvi", "ndre", "ndwi", "pri", "ari", "nbr"]:
-        v1 = stats[1][index_name]
-        v2 = stats[2][index_name]
-        v3 = stats[3][index_name]
-        v4 = stats[4][index_name]
+    if missing_classes:
+        print("Classes manquantes :", missing_classes)
 
-        coherent = (v1 > v2 > v3 > v4)
+    # Sens attendu des indices quand le stress augmente
+    index_directions = {
+        "ndvi": "decrease",
+        "ndre": "decrease",
+        "ndwi": "decrease",
+        "pri": "decrease",
+        "ari": "increase",
+        "evi": "decrease",
+        "nbr": "decrease"
+    }
+
+    for index_name, direction in index_directions.items():
+
+        pairs = [
+            (class_names[c], stats[c][index_name])
+            for c in available_classes
+            if index_name in stats[c]
+        ]
+
+        if len(pairs) < 2:
+            print(f"{index_name.upper():5s} | Données insuffisantes")
+            continue
+
+        labels, values = zip(*pairs)
+
+        if direction == "decrease":
+            coherent = all(
+                values[i] > values[i + 1]
+                for i in range(len(values) - 1)
+            )
+        elif direction == "increase":
+            coherent = all(
+                values[i] < values[i + 1]
+                for i in range(len(values) - 1)
+            )
+
+        values_text = " | ".join(
+            f"{label}={value:.4f}"
+            for label, value in zip(labels, values)
+        )
+
+        expected = "↓" if direction == "decrease" else "↑"
 
         print(
             f"{index_name.upper():5s} | "
-            f"Pas stressée={v1:.4f} | "
-            f"Peu stressée={v2:.4f} | "
-            f"Moyennement stressée={v3:.4f} | "
-            f"Très stressée={v4:.4f} | "
+            f"{values_text} | "
+            f"Attendu={expected} | "
             f"Cohérent={coherent}"
         )
-
-
+        
 # ============================================================
 # 9) KRUSKAL-WALLIS
 # ============================================================

@@ -315,6 +315,7 @@ def evaluate_classification_model(
         importance = model.feature_importances_
 
         print("\nFeature importance :")
+        print(feature_names)
         print(importance)
 
         # noms automatiques si non fournis

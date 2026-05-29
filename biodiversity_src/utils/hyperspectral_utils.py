@@ -6,13 +6,20 @@ import pandas as pd
 # 2) LECTURE DES DONNÉES
 # ============================================================
 
-def read_hyperspectral_raster(image_path, scale_factor=10000.0, nodata_value=-32768):
+def read_hyperspectral_raster(
+    image_path,
+    scale_factor=None,
+    nodata_value=-32768
+):
     with rasterio.open(image_path) as src:
         cube = src.read().astype(np.float32)
         profile = src.profile
 
     cube[cube == nodata_value] = np.nan
-    cube /= scale_factor
+
+    if scale_factor is not None:
+        cube /= scale_factor
+
     return cube, profile
 
 
