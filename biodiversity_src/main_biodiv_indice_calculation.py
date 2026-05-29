@@ -145,8 +145,7 @@ if __name__ == "__main__":
     print("Pixels valides :", np.count_nonzero(enmap_valid_mask))
     print("Pixels totaux  :", enmap_valid_mask.size)
 
-    # Indices
-
+    # Filtrage des réflectances non physiques
     cube_clean = cube.copy()
     cube_clean[cube_clean < 0] = np.nan
     cube_clean[cube_clean > 1.2] = np.nan
@@ -154,6 +153,7 @@ if __name__ == "__main__":
     print("MEAN:", np.nanmean(cube_clean))
     print("MAX :", np.nanmax(cube_clean))
 
+    # Indices
     indices = compute_spectral_indices(cube, wavelengths)
 
     # Reclassification GT -> 4 classes
