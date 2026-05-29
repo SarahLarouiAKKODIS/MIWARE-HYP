@@ -26,41 +26,34 @@
   "STRESS_GROUPS": {
     "1": [
       "Sapin, épicéa",
-      "Douglas"
-    ],
-
-    "2": [
       "Chênes sempervirents",
+      "Mélèze",
+      "Robinier",
+      "Peuplier"
+    ],
+    "2": [
+      "Châtaignier",
       "Pin laricio, pin noir",
       "Pin sylvestre",
       "Pin maritime",
+      "Douglas",
       "Conifères",
+      "Feuillus",
       "Pin autre",
       "Pin d'Alep",
       "Pins mélangés",
-      "Pin à crochets, pin cembro"
-    ],
-
-    "3": [
-      "Mixte",
-      "Mélèze"
-    ],
-
-    "4": [
-      "Feuillus",
-      "Châtaignier",
+      "Pin à crochets, pin cembro",
       "Chênes décidus",
-      "Hêtre",
-      "Robinier",
-      "Peuplier"
+      "Hêtre"
+    ],
+    "3": [
+      "Mixte"
     ]
   },
-
   "STRESS_CLASS_NAMES": {
-    "1": "Forte vigueur spectrale",
-    "2": "Vigueur spectrale intermédiaire",
-    "3": "Transition phénologique",
-    "4": "Sénescence avancée"
+    "1": "Pas stressée",
+    "2": "Peu stressée",
+    "3": "Moyennement stressée",
+    "4": "Très stressée"
   }
-
 }

@@ -23,31 +23,33 @@
     "Mélèze" : 20,
     "Robinier": 21
   },
-  "STRESS_GROUPS": {
+   "STRESS_GROUPS": {
     "1": [
       "Sapin, épicéa",
-      "Chênes sempervirents",
-      "Mélèze",
-      "Robinier",
-      "Peuplier"
+      "Douglas",
+      "Chênes sempervirents"
     ],
     "2": [
-      "Châtaignier",
       "Pin laricio, pin noir",
       "Pin sylvestre",
       "Pin maritime",
-      "Douglas",
       "Conifères",
-      "Feuillus",
       "Pin autre",
       "Pin d'Alep",
       "Pins mélangés",
-      "Pin à crochets, pin cembro",
-      "Chênes décidus",
-      "Hêtre"
+      "Pin à crochets, pin cembro"
     ],
     "3": [
-      "Mixte"
+      "Mixte",
+      "Feuillus",
+      "Robinier",
+      "Peuplier",
+      "Chênes décidus"
+    ],
+    "4": [
+      "Châtaignier",
+      "Hêtre",
+      "Mélèze"
     ]
   },
   "STRESS_CLASS_NAMES": {
