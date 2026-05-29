@@ -1,4 +1,5 @@
-
+### Le script `main_biodiv_indice_calculation.py` doit être exécuté 
+# préalablement afin de générer les indices utilisés pour la classification.
 
 from pathlib import Path
 import numpy as np
@@ -13,15 +14,16 @@ from utils.classification_functions import evaluate_classification_model
 config_path = Path("/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/")
 
 config_files = [
-    config_path / "salsigne_2.json",
-    config_path / "salsigne_3.json",
-    config_path / "salsigne.json",
-    config_path / "salau_1.json",
-    config_path / "salau_2.json",
-    config_path / "cma_1.json",
-    config_path / "cma.json",
-    config_path / "abbaretz.json",
-    config_path / "abbaretz_3.json"
+    config_path / "salsigne_3.json", #0
+    config_path / "salsigne_mars_2.json", #1
+    config_path / "salsigne_mars_3.json", #2
+    config_path / "salsigne.json", #3
+    config_path / "salau_1.json", #4
+    config_path / "salau_2.json", #5
+    config_path / "cma_1.json", #6
+    config_path / "cma.json", #7
+    config_path / "abbaretz.json", #8
+    config_path / "abbaretz_3.json" #9
 ]
 
 feature_names = [
@@ -30,6 +32,7 @@ feature_names = [
     "NDWI",
     "PRI",
     "ARI",
+    "EVI"
     "NBR"
 ]
 
@@ -55,6 +58,8 @@ for config_path in config_files:
 
     # même groupe pour tout le fichier
     groups.extend([group_id] * len(y))
+
+    print('config_path', [group_id, config_path])
 
     group_id += 1
 
@@ -88,6 +93,13 @@ for fold, (train_idx, test_idx) in enumerate(
     y_train = y_all[train_idx]
     y_test = y_all[test_idx]
 
+    # IDs des groupes
+    train_groups = np.unique(groups[train_idx])
+    test_groups = np.unique(groups[test_idx])
+
+    print("group_train", train_groups)
+    print("group_test", test_groups)
+
     from sklearn.preprocessing import LabelEncoder
 
     le = LabelEncoder()
@@ -105,7 +117,14 @@ for fold, (train_idx, test_idx) in enumerate(
 
     print('labels dans y_train = ', np.unique(y_train))
 
-    model.fit(X_train, y_train_enc)
+    from sklearn.utils.class_weight import compute_sample_weight
+
+    sample_weights = compute_sample_weight(
+        class_weight="balanced",
+        y=y_train
+    )
+
+    model.fit(X_train, y_train_enc, sample_weight=sample_weights)
 
     y_pred_enc = model.predict(X_test)
     y_pred = le.inverse_transform(y_pred_enc)
