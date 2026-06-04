@@ -12,9 +12,19 @@ from .enmap_vegetation_indices import compute_vegetation_indices_wdi_vii
 from .preprocessing.mask_enmap import apply_water_veg_mask
 from .preprocessing.enmap_clean_bands import clean_bands_enmap_from_csv
 from .preprocessing.rescaling_image import rescale_enmap_cube_simple
+from .preprocessing.spectral_smoothing import savgol_smooth_and_normalize
 import json
 from .utils.enmap_rgb_extraction import hyperspectral_to_rgb
 from pathlib import Path
+
+# Mineral detection imports
+from .mineral_detection.olivine_detection import detect_olivine_bd1050_bd2000_clean
+from .mineral_detection.pyroxene_detection import detect_pyroxene_bd1um_bd2um_clean
+from .mineral_detection.amphiboles_detection import detect_amphiboles_bd2320_clean
+from .mineral_detection.carbonates_detection import detect_carbonates_bd2330_bd2500_clean
+from .mineral_detection.micas_detection import detect_micas_bd2200_clean
+from .mineral_detection.argiles_detection import detect_argiles_bd2200_clean
+from .mineral_detection.oxydesFer_detection import detect_iron_oxides_bd900_redness_clean
 
 
 class MineralProcessor:
@@ -61,7 +71,7 @@ class MineralProcessor:
         self.Path_res.mkdir(parents=True, exist_ok=True)
         print(f"Configuration loaded from {config_path}")
 
-    def process(self) -> None:
+    def pre_process(self) -> None:
         """
         Exécute l'ensemble du traitement de l'image hyperspectrale.
         """
@@ -105,6 +115,14 @@ class MineralProcessor:
         print("Step 10: Applying water and vegetation masks...")
         self.apply_water_veg_mask()
 
+        # 11) Lissage spectral (optionnel mais recommandé)
+        print("Step 11: Smoothing image for mineral detection...")
+        self.smooth_image()
+
+        # 12) Détection des minéraux
+        print("Step 12: Detecting minerals...")
+        self.detect_minerals()
+    
     def recover_wavelet_band_info(self) -> None:
         """
         Récupère les informations des bandes wavelet depuis le fichier XML.
@@ -261,4 +279,94 @@ class MineralProcessor:
             water_mask_path=self.Water_results_dir / "enmap_salsigne_WATER_MASK.tiff",
             veg_mask_path=self.Vegetation_results_dir / "enmap_salsigne_VEG_MASK.tiff",
             output_path=self.enmap_mineral_candidates
+        )
+
+    def process_banddepth_mineral_detection(self) -> None:
+        """
+        Effectue la détection minérale en utilisant les méthodes de band depth.
+        """
+        self.smooth_image()  # Assurez-vous que l'image est lissée avant la détection
+        # Cette méthode peut être appelée après le pré-traitement pour effectuer la détection minérale spécifique.
+        self.detect_minerals()
+
+    def smooth_image(self) -> None:
+        """
+        Lisse et normalise l'image pour la détection minérale.
+        """
+        self.image_hyperspectrale_cleanbands_smooth = self.Path_res / "image_hyperspectrale_cleanbands_smooth.tif"
+
+        savgol_smooth_and_normalize(
+            img_path=self.image_hyperspectrale_cleanbands,
+            output_path=self.image_hyperspectrale_cleanbands_smooth,
+            normalize=None
+        )
+
+    def detect_minerals(self) -> None:
+        """
+        Détecte tous les types de minéraux dans l'image traitée.
+        """
+        # Répertoires de résultats pour chaque minéral
+        self.Olivine_results_dir = self.Path_res / "Mineral_detection" / "olivine"
+        self.Pyroxene_results_dir = self.Path_res / "Mineral_detection" / "pyroxene"
+        self.Amphiboles_results_dir = self.Path_res / "Mineral_detection" / "amphiboles"
+        self.Carbonates_results_dir = self.Path_res / "Mineral_detection" / "carbonates"
+        self.Micas_results_dir = self.Path_res / "Mineral_detection" / "micas"
+        self.Argiles_results_dir = self.Path_res / "Mineral_detection" / "argiles"
+        self.Iron_oxides_results_dir = self.Path_res / "Mineral_detection" / "iron_oxides"
+
+        # Détection de l'olivine
+        result = detect_olivine_bd1050_bd2000_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Olivine_results_dir,
+            sampling_mode="nearest",
+            verbose=True,
+        )
+
+        # Détection du pyroxène
+        result = detect_pyroxene_bd1um_bd2um_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Pyroxene_results_dir,
+            sampling_mode="nearest"
+        )
+
+        # Détection des amphiboles
+        result = detect_amphiboles_bd2320_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Amphiboles_results_dir,
+            sampling_mode="nearest",
+        )
+
+        # Détection des carbonates
+        result = detect_carbonates_bd2330_bd2500_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Carbonates_results_dir,
+            sampling_mode="nearest"
+        )
+
+        # Détection des micas
+        result = detect_micas_bd2200_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Micas_results_dir,
+            sampling_mode="linear",
+        )
+
+        # Détection des argiles
+        result = detect_argiles_bd2200_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Argiles_results_dir,
+            sampling_mode="linear",
+        )
+
+        # Détection des oxydes de fer
+        result = detect_iron_oxides_bd900_redness_clean(
+            tif_path=self.image_hyperspectrale_cleanbands_smooth,
+            bands_csv=self.clean_wavelengths_csv,
+            outdir=self.Iron_oxides_results_dir,
+            sampling_mode="linear",
         )

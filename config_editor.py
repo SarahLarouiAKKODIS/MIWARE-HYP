@@ -265,7 +265,7 @@ class ConfigEditor:
         
         try:
             # Call the mineral processor's process method
-            self.mineral_processor.process()
+            self.mineral_processor.pre_process()
             messagebox.showinfo("Success", "Preprocessing completed successfully")
         except Exception as e:
             messagebox.showerror("Error", f"Preprocessing failed: {e}")
@@ -278,6 +278,7 @@ class ConfigEditor:
         
         try:
             # TODO: Implement banddepth mineral detection
+            self.mineral_processor.process_banddepth_mineral_detection()
             messagebox.showinfo("Info", "Banddepth mineral detection would run here")
         except Exception as e:
             messagebox.showerror("Error", f"Banddepth detection failed: {e}")
