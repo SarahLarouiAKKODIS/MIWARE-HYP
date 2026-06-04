@@ -5,7 +5,7 @@ import numpy as np
 import rasterio
 import tifffile
 
-from utils.enmap_indices_calculation_utils import (
+from .utils.enmap_indices_calculation_utils import (
     load_wavelengths_from_csv,
     compute_auto_tol_nm,
     nearest_band_index,
