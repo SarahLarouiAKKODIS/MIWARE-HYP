@@ -1,21 +1,22 @@
 """
 Module contenant la classe MineralProcessor pour traiter les images hyperspectrales.
 """
+from pathlib import Path
+import os
+import json
 
+# Importer les fonctions nécessaires pour le pré-traitement et la détection minérale
 from .utils.enmap_band_utils import recover_wavelet_band_info
-from .enmap_quality_mask import mask_enmap_hyperspectral_cube
 from .utils.enmap_crop_image import crop_hyperspectral_tif
 from .utils.analyse_hyperspectral_image import analyze_rescaled_cube_with_wavelengths
+from .utils.enmap_rgb_extraction import hyperspectral_to_rgb
 from .enmap_water_indices import compute_mndwi_and_water_mask
 from .enmap_vegetation_indices import compute_vegetation_indices_wdi_vii
-
+from .enmap_quality_mask import mask_enmap_hyperspectral_cube
 from .preprocessing.mask_enmap import apply_water_veg_mask
 from .preprocessing.enmap_clean_bands import clean_bands_enmap_from_csv
 from .preprocessing.rescaling_image import rescale_enmap_cube_simple
 from .preprocessing.spectral_smoothing import savgol_smooth_and_normalize
-import json
-from .utils.enmap_rgb_extraction import hyperspectral_to_rgb
-from pathlib import Path
 
 # Mineral detection imports
 from .mineral_detection.olivine_detection import detect_olivine_bd1050_bd2000_clean
@@ -26,6 +27,9 @@ from .mineral_detection.micas_detection import detect_micas_bd2200_clean
 from .mineral_detection.argiles_detection import detect_argiles_bd2200_clean
 from .mineral_detection.oxydesFer_detection import detect_iron_oxides_bd900_redness_clean
 
+# Importer les méthodes de comparaison spectrales.
+from .spectral_comparison_methodes.sam_mf_detection_spy import run_single_mineral_detection_from_tab_refs
+from .spectral_comparison_methodes.sam_ace_detection import run_single_mineral_ace_from_tab_refs
 
 class MineralProcessor:
     """
@@ -43,6 +47,8 @@ class MineralProcessor:
         """
         self.config = None
         self.Path_res = None
+        # Configuration pour la détection spectrale
+        self.spectral_library_dir = None
 
     @staticmethod
     def load_config(path: str) -> dict:
@@ -69,8 +75,12 @@ class MineralProcessor:
         self.config = self.load_config(config_path)
         self.Path_res = Path(self.config["Path_res"])
         self.Path_res.mkdir(parents=True, exist_ok=True)
+        # Charger la bibliothèque spectrale depuis la configuration si disponible
+        if "spectral_library_dir" in self.config:
+            self.spectral_library_dir = self.config["spectral_library_dir"]
         print(f"Configuration loaded from {config_path}")
 
+    # pré-traitement complet
     def pre_process(self) -> None:
         """
         Exécute l'ensemble du traitement de l'image hyperspectrale.
@@ -281,6 +291,7 @@ class MineralProcessor:
             output_path=self.enmap_mineral_candidates
         )
 
+    # Détection minérale en utilisant les méthodes de band depth
     def process_banddepth_mineral_detection(self) -> None:
         """
         Effectue la détection minérale en utilisant les méthodes de band depth.
@@ -370,3 +381,70 @@ class MineralProcessor:
             outdir=self.Iron_oxides_results_dir,
             sampling_mode="linear",
         )
+
+    # Détection minérale en utilisant les méthodes de comparaison spectrale (SAM/MF/ACE)
+    def process_spectral_comparison_mineral_detection(self, mineral: str) -> None:
+        """
+        Effectue la détection minérale en utilisant les méthodes de comparaison spectrale (SAM/MF/ACE).
+        
+        Args:
+            mineral (str): Nom du minéral à détecter (ex: "arsenopyrite", "chalcopyrite").
+        """
+        self.smooth_image_for_spectral_comparison()  # Assurez-vous que l'image est lissée et normalisée pour la comparaison spectrale
+        self.detect_minerals_spectral_comparison(mineral)
+
+    def smooth_image_for_spectral_comparison(self) -> None:
+        """
+        Lisse et normalise l'image pour la comparaison spectrale (SAM/MF/ACE).
+        Utilise un lissage léger et une normalisation L2.
+        """
+        self.image_hyperspectrale_cleanbands_smooth_norm = self.Path_res / "image_hyperspectrale_cleanbands_smooth_norm.tif"
+
+        savgol_smooth_and_normalize(
+            img_path=self.image_hyperspectrale_cleanbands,
+            output_path=self.image_hyperspectrale_cleanbands_smooth_norm,
+            window_length=9,  # Léger lissage pour EnMAP
+            polyorder=2,
+            normalize="l2"  # Recommandé pour SAM/MF/ACE
+        )
+
+    def detect_minerals_spectral_comparison(self, mineral: str) -> None:
+        """
+        Détecte un minéral spécifique en utilisant les méthodes de comparaison spectrale.
+        
+        Args:
+            mineral (str): Nom du minéral à détecter (ex: "arsenopyrite", "chalcopyrite").
+        """
+        if not self.spectral_library_dir:
+            raise ValueError("spectral_library_dir must be set in configuration")
+        
+        # Vérifier que l'image est prête
+        if not hasattr(self, 'image_hyperspectrale_cleanbands_smooth_norm'):
+            print("Smoothing image for spectral comparison...")
+            self.smooth_image_for_spectral_comparison()
+        
+        # Créer le répertoire de sortie
+        self.Spectral_results_dir = self.Path_res / "Spectral_mineral_detection"
+        os.makedirs(self.Spectral_results_dir, exist_ok=True)
+        
+        print(f"Detecting {mineral} using spectral comparison methods...")
+        
+        # SAM + MF detection
+        sam_out, mf_out, combo_out, used_refs = run_single_mineral_detection_from_tab_refs(
+            img_tif_path=self.image_hyperspectrale_cleanbands_smooth_norm,
+            bands_csv=self.clean_wavelengths_csv,
+            ref_root_dir=self.spectral_library_dir,
+            mineral=mineral,
+            out_dir=str(self.Spectral_results_dir / "sam_mf" / mineral)
+        )
+        
+        # SAM + ACE detection
+        sam_out, ace_out, combo_out, used_refs = run_single_mineral_ace_from_tab_refs(
+            img_tif_path=self.image_hyperspectrale_cleanbands_smooth_norm,
+            bands_csv=self.clean_wavelengths_csv,
+            ref_root_dir=self.spectral_library_dir,
+            mineral=mineral,
+            out_dir=str(self.Spectral_results_dir / "sam_ace" / mineral)
+        )
+        
+        print(f"Spectral comparison detection completed for {mineral}")

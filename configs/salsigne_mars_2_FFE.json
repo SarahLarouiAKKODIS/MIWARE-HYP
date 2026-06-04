@@ -17,5 +17,6 @@
         945,
         780
     ],
-    "Path_res": "/var/home/starfox/FFE_WS/MIWARE-HYP/Results/20260324_Salsigne_2"
+    "Path_res": "/var/home/starfox/FFE_WS/MIWARE-HYP/Results/20260324_Salsigne_2",
+    "spectral_library_dir": "/home/starfox/FFE_WS/MIWARE-HYP/Data/Librairies_spectrales/RELAB"
 }

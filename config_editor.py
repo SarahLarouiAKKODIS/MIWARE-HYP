@@ -277,7 +277,6 @@ class ConfigEditor:
             return
         
         try:
-            # TODO: Implement banddepth mineral detection
             self.mineral_processor.process_banddepth_mineral_detection()
             messagebox.showinfo("Info", "Banddepth mineral detection would run here")
         except Exception as e:
@@ -290,7 +289,7 @@ class ConfigEditor:
             return
         
         try:
-            # TODO: Implement spectral comparison mineral detection
+            self.mineral_processor.process_spectral_comparison_mineral_detection(mineral="arsenopyrite")
             messagebox.showinfo("Info", "Spectral comparison mineral detection would run here")
         except Exception as e:
             messagebox.showerror("Error", f"Spectral comparison failed: {e}")

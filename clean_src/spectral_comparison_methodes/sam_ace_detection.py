@@ -14,7 +14,7 @@ import rasterio
 
 from spectral.algorithms import spectral_angles
 
-from spectral_comparison_methodes.commun_functions import read_wavelengths_and_fwhm_from_csv, load_tab_spectrum, load_ecostress_txt_spectrum, find_reference_txts, resample_spectrum_gaussian_fwhm, l2_normalize_spectrum, normalize_image_l2, estimate_background_stats, sam_to_score
+from .commun_functions import read_wavelengths_and_fwhm_from_csv, load_tab_spectrum, load_ecostress_txt_spectrum, find_reference_txts, resample_spectrum_gaussian_fwhm, l2_normalize_spectrum, normalize_image_l2, estimate_background_stats, sam_to_score
 
 # -----------------------------
 # 5) ACE
