@@ -240,6 +240,21 @@ class ConfigEditor:
         button_frame = Frame(self.process_tab)
         button_frame.pack(pady=20, fill='x')
         
+        # Mineral selection dropdown
+        mineral_frame = Frame(self.process_tab)
+        mineral_frame.pack(pady=10, fill='x')
+        Label(mineral_frame, text="Mineral:").pack(side=LEFT, padx=5)
+
+        self.selected_mineral = StringVar(value="arsenopyrite")
+        mineral_dropdown = ttk.Combobox(
+            mineral_frame,
+            textvariable=self.selected_mineral,
+            values=["arsenopyrite", "chalcopyrite", "ferrihydite", "ferrihydite naturel", "goethite", "jarosite",  "lepidocrocite", "pyrite", "schwertmannite"],
+            state="readonly",
+            width=15
+        )
+        mineral_dropdown.pack(side=LEFT, padx=5)
+
         # Load config button (for reloading in process tab)
         Button(button_frame, text="Load Config", command=self.load_config_from_process).pack(pady=5, fill='x')
         
@@ -289,7 +304,7 @@ class ConfigEditor:
             return
         
         try:
-            self.mineral_processor.process_spectral_comparison_mineral_detection(mineral="arsenopyrite")
+            self.mineral_processor.process_spectral_comparison_mineral_detection(mineral=self.selected_mineral.get())
             messagebox.showinfo("Info", "Spectral comparison mineral detection would run here")
         except Exception as e:
             messagebox.showerror("Error", f"Spectral comparison failed: {e}")
