@@ -1,6 +1,7 @@
 # Environnement virtuel
 hypenv/
 bdforet_env/
+biodiv_env/
 
 # Données hyperspectrales (ignorer le contenu, pas le dossier)
 Data/*

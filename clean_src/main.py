@@ -18,7 +18,7 @@ def load_config(path):
 
 def main():
 
-    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/abbaretz.json"
+    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne_3.json"
     config = load_config(config_path)
 
     Path_res = Path(config["Path_res"])
