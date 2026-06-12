@@ -79,6 +79,8 @@ class ConfigEditor:
             self.file_label.config(text=os.path.basename(file_path))
             self.display_config_fields()
 
+            # Load mineral list for process tab
+            self.mineral_dropdown['values'] = self.get_relab_minerals()
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load config: {e}")
@@ -233,6 +235,20 @@ class ConfigEditor:
             messagebox.showerror("Error", f"Failed to save config: {e}")
     
     # Process Tab Methods
+    def get_relab_minerals(self):
+        """Scan RELAB directory and return list of mineral names from subdirectories"""
+        # relab_path = os.path.join("Data", "Librairies_spectrales", "RELAB")
+        relab_path = self.config_data["spectral_library_dir"]
+        minerals = []
+        
+        if os.path.exists(relab_path):
+            for entry in os.listdir(relab_path):
+                full_path = os.path.join(relab_path, entry)
+                if os.path.isdir(full_path):
+                    minerals.append(entry)
+        
+        return sorted(minerals) if minerals else ["no minerals loaded"]
+    
     def init_process_tab(self):
         """Initialize the process tab with processing buttons"""
         
@@ -245,15 +261,15 @@ class ConfigEditor:
         mineral_frame.pack(pady=10, fill='x')
         Label(mineral_frame, text="Mineral:").pack(side=LEFT, padx=5)
 
-        self.selected_mineral = StringVar(value="arsenopyrite")
-        mineral_dropdown = ttk.Combobox(
+        self.selected_mineral = StringVar(value="load config first")
+        self.mineral_dropdown = ttk.Combobox(
             mineral_frame,
             textvariable=self.selected_mineral,
-            values=["arsenopyrite", "chalcopyrite", "ferrihydite", "ferrihydite naturel", "goethite", "jarosite",  "lepidocrocite", "pyrite", "schwertmannite"],
+            values=["no minerals loaded"],
             state="readonly",
             width=15
         )
-        mineral_dropdown.pack(side=LEFT, padx=5)
+        self.mineral_dropdown.pack(side=LEFT, padx=5)
 
         # Load config button (for reloading in process tab)
         Button(button_frame, text="Load Config", command=self.load_config_from_process).pack(pady=5, fill='x')
