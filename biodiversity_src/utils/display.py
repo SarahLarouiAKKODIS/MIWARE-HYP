@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import GroupKFold
 
+from matplotlib.colors import ListedColormap
+from matplotlib.patches import Patch
+
 
 def print_stress_class_distribution(out, stress_class_names=None):
     """
@@ -176,4 +179,115 @@ def plot_spatial_cv_folds(rows, cols, image_shape, block_size=200, n_splits=5):
 
     plt.suptitle("Spatial Cross Validation (train / test)", fontsize=16)
     plt.tight_layout()
+    plt.show()
+
+
+def plot_gt_and_stress_masks(gt_mask, stress_mask, class_map, stress_class_names, output_path=None):
+
+    # Couleurs pour les 21 classes GT (0 = fond / no data)
+    GT_COLORS = [
+        "#ffffff",  # 0 = fond / no data
+
+        "#1b9e77",  # 1 Sapin, épicéa
+        "#d95f02",  # 2 Châtaignier
+        "#7570b3",  # 3 Chênes décidus
+        "#66a61e",  # 4 Chênes sempervirents
+        "#e7298a",  # 5 Conifères
+        "#a6761d",  # 6 Douglas
+        "#666666",  # 7 Feuillus
+        "#1f78b4",  # 8 Hêtre
+        "#b2df8a",  # 9 Mixte
+        "#fb9a99",  # 10 NC
+        "#cab2d6",  # 11 NR
+        "#fdbf6f",  # 12 Peuplier
+        "#ff7f00",  # 13 Pin autre
+        "#6a3d9a",  # 14 Pin d'Alep
+        "#b15928",  # 15 Pin laricio, pin noir
+        "#a6cee3",  # 16 Pin sylvestre
+        "#33a02c",  # 17 Pins mélangés
+        "#ffcc00",  # 18 Pin maritime (jaune/orangé → pin distinct)
+        "#8dd3c7",  # 19 Pin à crochets, pin cembro (bleu-vert clair → alpin)
+        "#bc80bd",  # 20 Mélèze (violet clair → caduc conifère, distinct)
+        "#e31a1c",  # 21 Robinier (rouge → feuillu particulier)
+    ]
+    # Couleurs pour les 4 classes stress (0 = blanc)
+    STRESS_COLORS = [
+        "#ffffff",  # 0 = fond / exclu
+        "#99d8c9",  # 1 pas stressée
+        "#2ca25f",  # 2 peu stressée
+        "#fec44f",  # 3 moyennement stressée
+        "#de2d26",  # 4 très stressée
+    ]
+
+    # STRESS_COLORS = [
+    #     "#ffffff",  # 0 = fond / exclu
+    #     "#31a354",  # 1 pas stressée (vert)
+    #     "#ffd92f",  # 2 peu stressée (jaune)
+    #     "#fd8d3c",  # 3 moyennement stressée (orange)
+    #     "#de2d26",  # 4 très stressée (rouge)
+    # ]
+
+    gt_cmap = ListedColormap(GT_COLORS)
+    stress_cmap = ListedColormap(STRESS_COLORS)
+
+    id_to_class = {v: k for k, v in class_map.items()}  
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+
+    # -------------------------
+    # Masque GT original
+    # -------------------------
+    axes[0].imshow(gt_mask, cmap=gt_cmap, vmin=0, vmax=max(id_to_class.keys()))
+    axes[0].set_title("Masque vérité terrain (classes originales)")
+    axes[0].axis("off")
+
+    gt_legend_elements = []
+    present_gt_labels = sorted(np.unique(gt_mask))
+    for lab in present_gt_labels:
+        if lab == 0:
+            continue
+        if lab in id_to_class:
+            gt_legend_elements.append(
+                Patch(facecolor=GT_COLORS[lab], edgecolor="black", label=id_to_class[lab])
+            )
+
+    axes[0].legend(
+        handles=gt_legend_elements,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
+        borderaxespad=0,
+        fontsize=8,
+        title="Classes GT"
+    )
+
+    # -------------------------
+    # Masque 4 classes stress
+    # -------------------------
+    axes[1].imshow(stress_mask, cmap=stress_cmap, vmin=0, vmax=4)
+    axes[1].set_title("Masque reclassé en 4 classes de stress")
+    axes[1].axis("off")
+
+    stress_legend_elements = []
+    present_stress_labels = sorted(np.unique(stress_mask))
+    for lab in present_stress_labels:
+        if lab == 0:
+            continue
+        stress_legend_elements.append(
+            Patch(facecolor=STRESS_COLORS[lab], edgecolor="black", label=stress_class_names[lab])
+        )
+
+    axes[1].legend(
+        handles=stress_legend_elements,
+        loc="upper left",
+        bbox_to_anchor=(1.02, 1.0),
+        borderaxespad=0,
+        fontsize=10,
+        title="Classes stress"
+    )
+
+    plt.tight_layout()
+
+    if output_path is not None:
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+
     plt.show()

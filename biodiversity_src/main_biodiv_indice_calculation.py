@@ -8,56 +8,11 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
 from clean_src.preprocessing.spectral_smoothing import savgol_smooth_and_normalize
-from utils.commun_functions import load_config, read_mask
-from utils.statistic_functions import compute_mean_indices_per_group, check_stress_coherence, kruskal_tests
-from utils.classification_functions import reclassify_gt_to_stress_classes, run_random_forest_classification, spatial_block_cv_random_forest, train_test_spatial_split
-from utils.display import plot_boxplots, plot_spatial_cv_folds, print_class_distribution_named, print_spatial_cv_results
-from utils.hyperspectral_utils import read_hyperspectral_raster, read_mask, read_wavelengths_from_csv, save_mask, build_enmap_valid_mask
-from utils.indices_calculation import compute_spectral_indices
+from utils import load_config, read_mask
+from utils import read_hyperspectral_raster, read_mask, read_wavelengths_from_csv, build_enmap_valid_mask
+from utils import compute_spectral_indices
 
-# ============================================================
-# 6) EXTRACTION DES PIXELS
-# ============================================================
-
-
-def extract_pixels(indices_dict, target_mask, valid_pixels_mask=None, ignore_labels=(0,)):
-    if valid_pixels_mask is None:
-        valid_pixels_mask = np.ones(target_mask.shape, dtype=bool)
-
-    valid = (
-        valid_pixels_mask &
-        np.isfinite(indices_dict["ndvi"]) &
-        np.isfinite(indices_dict["ndre"]) &
-        np.isfinite(indices_dict["ndwi"]) &
-        np.isfinite(indices_dict["pri"]) &
-        np.isfinite(indices_dict["ari"]) &
-        np.isfinite(indices_dict["evi"]) &
-        np.isfinite(indices_dict["nbr"]) 
-    )
-
-    for lab in ignore_labels:
-        valid &= (target_mask != lab)
-
-    # coordonnées pixels
-    rows, cols = np.where(valid)
-
-    # features
-    X = np.stack([
-        indices_dict["ndvi"][valid],
-        indices_dict["ndre"][valid],
-        indices_dict["ndwi"][valid],
-        indices_dict["pri"][valid],
-        indices_dict["ari"][valid],
-        indices_dict["evi"][valid],
-        indices_dict["nbr"][valid],
-    ], axis=1).astype(np.float32)
-
-    # labels
-    y = target_mask[valid].astype(np.int32)
-
-    return X, y, rows, cols
-
-
+from indices.indice_dataset_generation import build_and_save_datasets
 
 # ============================================================
 # 12) MAIN
@@ -65,7 +20,7 @@ def extract_pixels(indices_dict, target_mask, valid_pixels_mask=None, ignore_lab
 
 if __name__ == "__main__":
 
-    config_site_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salau_2.json"
+    config_site_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne.json"
     config_site = load_config(config_site_path)
 
     Path_res = Path(config_site["Path_res"])
@@ -115,6 +70,7 @@ if __name__ == "__main__":
 
     gt_mask_path = Path_res / "Forest/mask_foret_classes.tif"
     output_group_mask_path = Path_res / "Forest/mask_gt_stress_4classes.tif"
+    output_figure_path = Path_res / "figure_gt_vs_stress.png"
 
     # Lecture
     cube, profile = read_hyperspectral_raster(image_hyperspectrale_cleanbands_smooth)
@@ -153,67 +109,94 @@ if __name__ == "__main__":
     print("MEAN:", np.nanmean(cube_clean))
     print("MAX :", np.nanmax(cube_clean))
 
-    # Indices
+    ######### INDICES CALCULATION #################################################
+
     indices = compute_spectral_indices(cube, wavelengths)
 
-    # Reclassification GT -> 4 classes
-    stress_mask = reclassify_gt_to_stress_classes(
+    ######### DATASETS CALCULATION #################################################
+
+    ######### STRESS and SPECIES indices calculation [X, y]
+
+    build_and_save_datasets(
         gt_mask=gt_mask,
-        stress_groups=config_forest["STRESS_GROUPS"],
-        class_map=config_forest["CLASS_MAP"],
-        excluded_labels=EXCLUDED_ORIGINAL_LABELS
+        config_forest=config_forest,
+        indices=indices,
+        enmap_valid_mask=enmap_valid_mask,
+        profile=profile,
+        output_group_mask_path=output_group_mask_path,
+        output_figure_path = output_figure_path,
+        path_res=Path_res,
+        excluded_original_labels=EXCLUDED_ORIGINAL_LABELS,
     )
 
-    save_mask(output_group_mask_path, stress_mask, profile)
-    print("Masque 4 classes sauvegardé :", output_group_mask_path)
+    ######### mean spectre per class calculation [X, y]
+
+
+
+
+
+
+
+
+
+#     # Reclassification GT -> 4 classes
+#     stress_mask = reclassify_gt_to_stress_classes(
+#         gt_mask=gt_mask,
+#         stress_groups=config_forest["STRESS_GROUPS"],
+#         class_map=config_forest["CLASS_MAP"],
+#         excluded_labels=EXCLUDED_ORIGINAL_LABELS
+#     )
+
+#     save_mask(output_group_mask_path, stress_mask, profile)
+#     print("Masque 4 classes sauvegardé :", output_group_mask_path)
 
     # Stats par groupe
-    stats = compute_mean_indices_per_group(
-        indices,
-        stress_mask,
-        STRESS_CLASS_NAMES,
-        valid_pixels_mask=enmap_valid_mask,
-        ignore_labels=(0,)
-    )
+#     stats = compute_mean_indices_per_group(
+#         indices,
+#         stress_mask,
+#         STRESS_CLASS_NAMES,
+#         valid_pixels_mask=enmap_valid_mask,
+#         ignore_labels=(0,)
+#     )
 
-    print("\n=== Moyennes des indices par classe de stress ===")
-    for stress_id in sorted(stats.keys()):
-        vals = stats[stress_id]
-        print(
-            f"{stress_id} - {vals['class_name']:25s} | "
-            f"n={vals['n_pixels']:7d} | "
-            f"NDVI={vals['ndvi']:.4f} ± {vals['ndvi_std']:.4f} | "
-            f"NDRE={vals['ndre']:.4f} ± {vals['ndre_std']:.4f} | "
-            f"NDWI={vals['ndwi']:.4f} ± {vals['ndwi_std']:.4f}"
-            f"PRI={vals['pri']:.4f} ± {vals['pri_std']:.4f} | "
-            f"ARI={vals['ari']:.4f} ± {vals['ari_std']:.4f} | "
-            f"NBR={vals['nbr']:.4f} ± {vals['nbr_std']:.4f} | "
-        )
+#     print("\n=== Moyennes des indices par classe de stress ===")
+#     for stress_id in sorted(stats.keys()):
+#         vals = stats[stress_id]
+#         print(
+#             f"{stress_id} - {vals['class_name']:25s} | "
+#             f"n={vals['n_pixels']:7d} | "
+#             f"NDVI={vals['ndvi']:.4f} ± {vals['ndvi_std']:.4f} | "
+#             f"NDRE={vals['ndre']:.4f} ± {vals['ndre_std']:.4f} | "
+#             f"NDWI={vals['ndwi']:.4f} ± {vals['ndwi_std']:.4f}"
+#             f"PRI={vals['pri']:.4f} ± {vals['pri_std']:.4f} | "
+#             f"ARI={vals['ari']:.4f} ± {vals['ari_std']:.4f} | "
+#             f"NBR={vals['nbr']:.4f} ± {vals['nbr_std']:.4f} | "
+#         )
 
-    # Vérification de cohérence
-    check_stress_coherence(stats)
+#     # Vérification de cohérence
+#     check_stress_coherence(stats)
 
-    ## SAVE INDICE AND CLASSES
+#     ## SAVE INDICE AND CLASSES
 
-    X, y, rows, cols = extract_pixels(
-        indices_dict=indices,
-        target_mask=stress_mask,
-        valid_pixels_mask=enmap_valid_mask,
-        ignore_labels=(0,)
-    )
+#     X, y, rows, cols = extract_pixels(
+#         indices_dict=indices,
+#         target_mask=stress_mask,
+#         valid_pixels_mask=enmap_valid_mask,
+#         ignore_labels=(0,)
+#     )
 
-    print("\nForme de X :", X.shape)
-    print("Forme de y :", y.shape)
+#     print("\nForme de X :", X.shape)
+#     print("Forme de y :", y.shape)
 
-    Path(Path_res / "Indice_values").mkdir(exist_ok=True)
-    #Save dataset
-    np.savez(
-        Path_res / "Indice_values/dataset_indices.npz",
-        X=X,
-        y=y
-    )
+#     Path(Path_res / "Indice_values").mkdir(exist_ok=True)
+#     #Save dataset
+#     np.savez(
+#         Path_res / "Indice_values/dataset_indices.npz",
+#         X=X,
+#         y=y
+#     )
 
-
+# ##### STATISTICS CLACULATION AND BOXPLOT
 
 #     # Kruskal-Wallis
 #     kw_results = kruskal_tests(

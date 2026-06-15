@@ -4,9 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 from pathlib import Path
-from utils.commun_functions import load_config, read_mask
-from utils.classification_functions import reclassify_gt_to_stress_classes
-from utils.display import print_stress_class_distribution
+from utils import load_config, read_mask
+from utils import reclassify_gt_to_stress_classes
+from utils import print_stress_class_distribution
 
 # ============================================================
 # 4) COULEURS

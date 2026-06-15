@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from cuml.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 #import joblib
-from utils.classification_functions import evaluate_classification_model
+from utils import evaluate_classification_model
 
 config_path = Path("/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/")
 

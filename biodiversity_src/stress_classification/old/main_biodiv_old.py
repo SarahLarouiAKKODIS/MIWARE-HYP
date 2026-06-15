@@ -8,12 +8,12 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT))
 
 from clean_src.preprocessing.spectral_smoothing import savgol_smooth_and_normalize
-from utils.commun_functions import load_config, read_mask
-from utils.statistic_functions import compute_mean_indices_per_group, check_stress_coherence, kruskal_tests
-from utils.classification_functions import reclassify_gt_to_stress_classes, run_random_forest_classification, spatial_block_cv_random_forest, train_test_spatial_split
-from utils.display import plot_boxplots, plot_spatial_cv_folds, print_class_distribution_named, print_spatial_cv_results
-from utils.hyperspectral_utils import read_hyperspectral_raster, read_mask, read_wavelengths_from_csv, save_mask, build_enmap_valid_mask
-from utils.indices_calculation import compute_spectral_indices
+from utils import load_config, read_mask
+from utils import compute_mean_indices_per_group, check_stress_coherence, kruskal_tests
+from utils import reclassify_gt_to_stress_classes, run_random_forest_classification, spatial_block_cv_random_forest, train_test_spatial_split
+from utils import plot_boxplots, plot_spatial_cv_folds, print_class_distribution_named, print_spatial_cv_results
+from utils import read_hyperspectral_raster, read_mask, read_wavelengths_from_csv, save_mask, build_enmap_valid_mask
+from utils import compute_spectral_indices
 
 # ============================================================
 # 6) EXTRACTION DES PIXELS
