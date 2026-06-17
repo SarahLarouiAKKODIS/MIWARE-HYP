@@ -452,6 +452,7 @@ def run_single_mineral_detection_from_tab_refs(
     used_refs = []
     skipped_refs = []
 
+    debug_counter = 1
     for p in ref_paths:
         # load ref spectrum from .tab
         try:
@@ -496,6 +497,8 @@ def run_single_mineral_detection_from_tab_refs(
         sam_stack.append(sam_map)
         mf_stack.append(mf_map)
         used_refs.append(os.path.basename(p))
+        print(f"[DEBUG] Processed {debug_counter}/{len(ref_paths)}: {os.path.basename(p)} -> SAM & MF maps computed.")
+        debug_counter += 1
 
     if len(sam_stack) == 0:
         raise ValueError("Aucune référence utilisable après parsing / recouvrement spectral.")

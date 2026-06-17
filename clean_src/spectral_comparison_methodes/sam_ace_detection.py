@@ -182,6 +182,7 @@ def run_single_mineral_ace_from_tab_refs(
     used_refs = []
     skipped_refs = []
 
+    debug_counter = 1
     for p in ref_paths:
         try:
             wl_ref_nm, s_ref = load_tab_spectrum(p)
@@ -226,6 +227,8 @@ def run_single_mineral_ace_from_tab_refs(
         sam_stack.append(sam_map)
         ace_stack.append(ace_map)
         used_refs.append(os.path.basename(p))
+        print(f"[DEBUG] Processed {debug_counter}/{len(ref_paths)}: {os.path.basename(p)} -> SAM & ACE maps computed.")
+        debug_counter += 1
 
     if len(ace_stack) == 0:
         raise ValueError("Aucune référence utilisable après parsing / recouvrement spectral.")
