@@ -4,7 +4,7 @@ from spectral_comparison_methodes.sam_mf_detection_spy import run_single_mineral
 from spectral_comparison_methodes.sam_ace_detection import run_single_mineral_ace_from_tab_refs
 from preprocessing.spectral_smoothing import savgol_smooth_and_normalize
 
-Path_res = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE_crop/"
+Path_res = "/home/starfox/FFE_WS/MIWARE-HYP/Results/20260324_Salsigne_2/"
 
 clean_wavelengths_csv = Path_res + "enmap_clean_bands_full.csv"
 image_hyperspectrale_cleanbands = Path_res + "image_hyperspectrale_cleanbands.tif"
@@ -22,7 +22,7 @@ savgol_smooth_and_normalize(
 )
 
 # spectral_library_dir = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/spectral_libraries/USGS/ASCIIdata_splib07a/ChapterM_Minerals/"
-spectral_library_dir = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Data/spectral_libraries/RELAB/"
+spectral_library_dir = "/home/starfox/FFE_WS/MIWARE-HYP/Data/Librairies_spectrales/RELAB/"
 
 out_dir = Path_res + "Spectral_mineral_detection/"
 os.makedirs(out_dir, exist_ok=True)

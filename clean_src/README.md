@@ -13,6 +13,15 @@ Les trois scripts correspondent à trois niveaux du pipeline :
 3. `main_spectralcomparison_mineral_detection.py`  
    Détection minérale par comparaison à des bibliothèques spectrales : SAM, Matched Filter, ACE et scores combinés.
 
+Ces 3 scripts ont fait l'objet d'une factorisation. Leurs versions originales sont dans `00-archives`. La nouvelle version est dans le fichier `mineral_processor.py` sous forme d'une classe unique: `MineralProcessor`.
+
+| Original | Remplacé par |
+|----------|--------------|
+| `main.py` | `def pre_process(self) -> None` |
+| `main_banddepth_mineral_detection.py` | `def process_banddepth_mineral_detection(self) -> None` |
+| `main_spectralcomparison_mineral_detection.py` | `def process_spectral_comparison_mineral_detection(self, mineral: str) -> None` |
+
+La classe est désormais implémentée dans l'interface graphique en exécutant config_editor.py à la racine du projet MIWARE-HYP.
 ---
 
 ## 1. Organisation générale du pipeline
@@ -780,3 +789,28 @@ python main.py
 python main_banddepth_mineral_detection.py
 python main_spectralcomparison_mineral_detection.py
 ```
+
+## 9. Interface graphique
+
+L'interface graphique se lance en exécutant le fichier `config_editor.py`.
+
+Remarque : un nouveau champ `spectral_library_dir` doit être ajouté au fichier de configuration JSON pour indiquer le dossier contenant les bibliothèques spectrales utilisées pour la comparaison SAM.
+
+L'interface comporte deux volets : Config et Process.
+
+Volet Config
+- Ouvrir un fichier de configuration JSON depuis le dossier `configs` avec le bouton "Load Config".
+- L'ensemble des champs est détecté automatiquement selon le type de donnée du JSON ; une ligne est créée pour chaque champ avec les options de modification appropriées.
+- Modifier les champs souhaités puis enregistrer avec le bouton "Save Config" (écrase le fichier existant).
+
+Remarque : pour les champs nécessitant une saisie manuelle (liste, float, ...), la validation des modifications s'effectue après avoir cliqué en dehors du champ (une trace de debug s'affiche dans le terminal à chaque validation).
+
+Ce volet peut être utilisé indépendamment du volet Process.
+
+Volet Process
+- Permet d'exécuter chaque étape du pipeline (prétraitement, détection par band depths et comparaison spectrale).
+- Règles d'utilisation :
+    - Toujours commencer par charger la configuration avec "Load Config". Il est possible de charger une nouvelle configuration, mais le processus doit alors être repris depuis le début. Le chargement met également à jour le volet Config.
+    - Après le chargement et avant de lancer les pipelines de détection, lancer impérativement le prétraitement avec le bouton "Pre Processing". Pour les opérations longues, le bouton reste enfoncé et grisé pendant l'opération et une fenêtre contextuelle apparaît à la fin. Le déroulé s'affiche également dans le terminal.
+    - Les deux pipelines "Banddepth Mineral Detection" et "Spectral Comparison Mineral Detection" peuvent être lancés indépendamment et dans n'importe quel ordre.
+    - Pour "Spectral Comparison Mineral Detection", un minéral doit être sélectionné via le menu déroulant "Mineral". Le menu est vide à l'ouverture et se met à jour automatiquement avec le contenu du dossier `spectral_library_dir` spécifié dans la configuration.

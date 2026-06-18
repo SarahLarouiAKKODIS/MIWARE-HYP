@@ -15,7 +15,7 @@ import rasterio
 from spectral.algorithms import spectral_angles
 from spectral.algorithms.detectors import matched_filter
 
-from spectral_comparison_methodes.commun_functions import read_wavelengths_and_fwhm_from_csv, load_tab_spectrum, load_ecostress_txt_spectrum, find_reference_txts, resample_spectrum_gaussian_fwhm, l2_normalize_spectrum, normalize_image_l2, estimate_background_stats, sam_to_score
+from .commun_functions import read_wavelengths_and_fwhm_from_csv, load_tab_spectrum, load_ecostress_txt_spectrum, find_reference_txts, resample_spectrum_gaussian_fwhm, l2_normalize_spectrum, normalize_image_l2, estimate_background_stats, sam_to_score
 
 
 def find_tab_spectra_for_mineral(ref_root: str, mineral: str) -> List[str]:
@@ -452,6 +452,7 @@ def run_single_mineral_detection_from_tab_refs(
     used_refs = []
     skipped_refs = []
 
+    debug_counter = 1
     for p in ref_paths:
         # load ref spectrum from .tab
         try:
@@ -496,6 +497,8 @@ def run_single_mineral_detection_from_tab_refs(
         sam_stack.append(sam_map)
         mf_stack.append(mf_map)
         used_refs.append(os.path.basename(p))
+        print(f"[DEBUG] Processed {debug_counter}/{len(ref_paths)}: {os.path.basename(p)} -> SAM & MF maps computed.")
+        debug_counter += 1
 
     if len(sam_stack) == 0:
         raise ValueError("Aucune référence utilisable après parsing / recouvrement spectral.")
