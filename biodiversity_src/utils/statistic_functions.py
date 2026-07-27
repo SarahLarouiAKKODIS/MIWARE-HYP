@@ -435,3 +435,436 @@ def plot_boxplots_from_xy(
 
         plt.tight_layout()
         plt.show()
+
+
+
+
+import numpy as np
+import pandas as pd
+
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+
+def compute_feature_statistics_by_class(
+    X,
+    y,
+    feature_names=None,
+    output_excel="feature_statistics_by_class.xlsx",
+    decimals=6,
+):
+    """
+    Calcule les statistiques descriptives des variables pour chaque classe
+    et exporte les résultats dans un fichier Excel.
+
+    Statistiques calculées
+    ----------------------
+    - nombre d'échantillons ;
+    - moyenne ;
+    - médiane ;
+    - écart-type ;
+    - coefficient de variation en pourcentage ;
+    - minimum ;
+    - premier quartile Q1 ;
+    - troisième quartile Q3 ;
+    - intervalle interquartile IQR ;
+    - maximum.
+
+    Paramètres
+    ----------
+    X : pandas.DataFrame ou array-like
+        Tableau des variables explicatives.
+
+    y : pandas.Series ou array-like
+        Classes associées aux observations de X.
+
+    feature_names : list[str], optional
+        Noms des variables lorsque X est un tableau NumPy.
+        Ce paramètre n'est pas nécessaire lorsque X est un DataFrame.
+
+    output_excel : str, pathlib.Path ou None
+        Chemin du fichier Excel à créer.
+        Si la valeur est None, aucun fichier Excel n'est créé.
+
+    decimals : int
+        Nombre de décimales conservées dans le tableau final.
+
+    Retours
+    -------
+    stats_df : pandas.DataFrame
+        Tableau complet des statistiques par classe.
+    """
+
+    # ------------------------------------------------------------------
+    # 1. Vérification et conversion de X
+    # ------------------------------------------------------------------
+    if isinstance(X, pd.DataFrame):
+        X_df = X.copy()
+
+        if feature_names is not None:
+            if len(feature_names) != X_df.shape[1]:
+                raise ValueError(
+                    "Le nombre de noms dans feature_names doit correspondre "
+                    "au nombre de colonnes de X."
+                )
+
+            X_df.columns = feature_names
+
+    else:
+        X_array = np.asarray(X)
+
+        if X_array.ndim != 2:
+            raise ValueError(
+                "X doit être un tableau à deux dimensions."
+            )
+
+        if feature_names is None:
+            feature_names = [
+                f"feature_{i}"
+                for i in range(X_array.shape[1])
+            ]
+
+        if len(feature_names) != X_array.shape[1]:
+            raise ValueError(
+                "Le nombre de noms dans feature_names doit correspondre "
+                "au nombre de colonnes de X."
+            )
+
+        X_df = pd.DataFrame(
+            X_array,
+            columns=feature_names,
+        )
+
+    # Vérification de l'unicité des noms de variables
+    if X_df.columns.duplicated().any():
+        duplicated = X_df.columns[
+            X_df.columns.duplicated()
+        ].tolist()
+
+        raise ValueError(
+            f"Les noms de variables doivent être uniques. "
+            f"Doublons détectés : {duplicated}"
+        )
+
+    # ------------------------------------------------------------------
+    # 2. Vérification et conversion de y
+    # ------------------------------------------------------------------
+    y_array = np.asarray(y).ravel()
+
+    if len(X_df) != len(y_array):
+        raise ValueError(
+            "X et y doivent contenir le même nombre d'observations. "
+            f"X contient {len(X_df)} lignes et y contient {len(y_array)} valeurs."
+        )
+
+    y_series = pd.Series(
+        y_array,
+        name="class",
+    )
+
+    # Réinitialisation des index pour garantir l'alignement
+    X_df = X_df.reset_index(drop=True)
+    y_series = y_series.reset_index(drop=True)
+
+    # ------------------------------------------------------------------
+    # 3. Conversion des variables en valeurs numériques
+    # ------------------------------------------------------------------
+    for feature in X_df.columns:
+        X_df[feature] = pd.to_numeric(
+            X_df[feature],
+            errors="coerce",
+        )
+
+    # Création du tableau contenant les variables et la classe
+    data = X_df.copy()
+    data["class"] = y_series
+
+    # Suppression des lignes dont la classe est manquante
+    data = data.dropna(subset=["class"])
+
+    if data.empty:
+        raise ValueError(
+            "Aucune observation valide n'est disponible après "
+            "la suppression des classes manquantes."
+        )
+
+    # ------------------------------------------------------------------
+    # 4. Calcul des statistiques par classe
+    # ------------------------------------------------------------------
+    results = []
+
+    for class_value, class_data in data.groupby(
+        "class",
+        sort=True,
+    ):
+        class_statistics = {
+            "class": class_value,
+            "n_samples": len(class_data),
+        }
+
+        for feature in X_df.columns:
+            values = class_data[feature].dropna()
+
+            # Cas où une variable ne contient aucune valeur valide
+            if values.empty:
+                class_statistics.update({
+                    f"{feature}_mean": np.nan,
+                    f"{feature}_median": np.nan,
+                    f"{feature}_std": np.nan,
+                    f"{feature}_cv": np.nan,
+                    f"{feature}_min": np.nan,
+                    f"{feature}_q1": np.nan,
+                    f"{feature}_q3": np.nan,
+                    f"{feature}_iqr": np.nan,
+                    f"{feature}_max": np.nan,
+                })
+
+                continue
+
+            mean_value = values.mean()
+            median_value = values.median()
+
+            # ddof=1 correspond à l'écart-type d'un échantillon
+            std_value = values.std(ddof=1)
+
+            q1_value = values.quantile(0.25)
+            q3_value = values.quantile(0.75)
+            iqr_value = q3_value - q1_value
+
+            # Le CV n'est pas fiable lorsque la moyenne est proche de zéro.
+            if (
+                pd.isna(std_value)
+                or np.isclose(mean_value, 0.0, atol=1e-12)
+            ):
+                cv_value = np.nan
+            else:
+                cv_value = (
+                    std_value / abs(mean_value)
+                ) * 100
+
+            class_statistics.update({
+                f"{feature}_mean": mean_value,
+                f"{feature}_median": median_value,
+                f"{feature}_std": std_value,
+                f"{feature}_cv": cv_value,
+                f"{feature}_min": values.min(),
+                f"{feature}_q1": q1_value,
+                f"{feature}_q3": q3_value,
+                f"{feature}_iqr": iqr_value,
+                f"{feature}_max": values.max(),
+            })
+
+        results.append(class_statistics)
+
+    stats_df = pd.DataFrame(results)
+
+    # Arrondissement des colonnes numériques, sauf n_samples
+    columns_to_round = [
+        column
+        for column in stats_df.columns
+        if column not in ["class", "n_samples"]
+    ]
+
+    stats_df[columns_to_round] = stats_df[
+        columns_to_round
+    ].round(decimals)
+
+    stats_df["n_samples"] = stats_df[
+        "n_samples"
+    ].astype(int)
+
+    # ------------------------------------------------------------------
+    # 5. Export dans Excel
+    # ------------------------------------------------------------------
+    if output_excel is not None:
+        try:
+            from openpyxl import load_workbook
+            from openpyxl.styles import Alignment, Font
+            from openpyxl.utils import get_column_letter
+
+        except ImportError as error:
+            raise ImportError(
+                "L'export Excel nécessite le module openpyxl. "
+                "Installe-le avec la commande : pip install openpyxl"
+            ) from error
+
+        output_path = Path(output_excel)
+
+        # Ajout automatique de l'extension xlsx
+        if output_path.suffix.lower() != ".xlsx":
+            output_path = output_path.with_suffix(".xlsx")
+
+        # Création du dossier de sortie s'il n'existe pas
+        output_path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        # Sélection des colonnes pour les feuilles synthétiques
+        identification_columns = [
+            "class",
+            "n_samples",
+        ]
+
+        mean_columns = identification_columns + [
+            column
+            for column in stats_df.columns
+            if column.endswith("_mean")
+        ]
+
+        median_columns = identification_columns + [
+            column
+            for column in stats_df.columns
+            if column.endswith("_median")
+        ]
+
+        std_columns = identification_columns + [
+            column
+            for column in stats_df.columns
+            if column.endswith("_std")
+        ]
+
+        cv_columns = identification_columns + [
+            column
+            for column in stats_df.columns
+            if column.endswith("_cv")
+        ]
+
+        iqr_columns = identification_columns + [
+            column
+            for column in stats_df.columns
+            if column.endswith("_iqr")
+        ]
+
+        # Écriture initiale du fichier avec pandas
+        with pd.ExcelWriter(
+            output_path,
+            engine="openpyxl",
+        ) as writer:
+            stats_df.to_excel(
+                writer,
+                sheet_name="Statistiques_completes",
+                index=False,
+            )
+
+            stats_df[mean_columns].to_excel(
+                writer,
+                sheet_name="Moyennes",
+                index=False,
+            )
+
+            stats_df[median_columns].to_excel(
+                writer,
+                sheet_name="Medianes",
+                index=False,
+            )
+
+            stats_df[std_columns].to_excel(
+                writer,
+                sheet_name="Ecarts_types",
+                index=False,
+            )
+
+            stats_df[cv_columns].to_excel(
+                writer,
+                sheet_name="CV",
+                index=False,
+            )
+
+            stats_df[iqr_columns].to_excel(
+                writer,
+                sheet_name="IQR",
+                index=False,
+            )
+
+        # ------------------------------------------------------------------
+        # 6. Mise en forme avec openpyxl
+        # ------------------------------------------------------------------
+        workbook = load_workbook(output_path)
+
+        for worksheet in workbook.worksheets:
+            # Figer la première ligne et les deux premières colonnes
+            worksheet.freeze_panes = "C2"
+
+            # Activer le filtre automatique
+            worksheet.auto_filter.ref = worksheet.dimensions
+
+            # Mise en forme des en-têtes
+            for cell in worksheet[1]:
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(
+                    horizontal="center",
+                    vertical="center",
+                    wrap_text=True,
+                )
+
+            # Alignement et format des cellules
+            for row in worksheet.iter_rows(
+                min_row=2,
+                max_row=worksheet.max_row,
+            ):
+                for cell in row:
+                    cell.alignment = Alignment(
+                        horizontal="center",
+                        vertical="center",
+                    )
+
+                    # Les deux premières colonnes sont des identifiants
+                    if cell.column > 2 and isinstance(
+                        cell.value,
+                        (int, float),
+                    ):
+                        cell.number_format = (
+                            "0." + ("0" * decimals)
+                            if decimals > 0
+                            else "0"
+                        )
+
+            # Ajustement automatique de la largeur des colonnes
+            for column_index in range(
+                1,
+                worksheet.max_column + 1,
+            ):
+                column_letter = get_column_letter(
+                    column_index
+                )
+
+                maximum_length = 0
+
+                for cell in worksheet[column_letter]:
+                    if cell.value is not None:
+                        cell_length = len(str(cell.value))
+                        maximum_length = max(
+                            maximum_length,
+                            cell_length,
+                        )
+
+                # Limitation de la largeur pour éviter des colonnes énormes
+                adjusted_width = min(
+                    maximum_length + 2,
+                    22,
+                )
+
+                worksheet.column_dimensions[
+                    column_letter
+                ].width = adjusted_width
+
+            # Hauteur de la ligne d'en-tête
+            worksheet.row_dimensions[1].height = 35
+
+        workbook.save(output_path)
+
+        print(
+            "Fichier Excel créé avec succès : "
+            f"{output_path.resolve()}"
+        )
+
+    return stats_df

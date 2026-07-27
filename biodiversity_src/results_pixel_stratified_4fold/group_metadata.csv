@@ -1,0 +1,11 @@
+group_id,config_path,path_res,n_pixels_before_filtering
+0,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne_3.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE_3,41011
+1,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne_mars_2.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260324_Salsigne_2,614239
+2,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne_mars_3.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260324_Salsigne_3,723266
+3,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salsigne.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE,449569
+4,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salau_1.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260306_Salau_1,749793
+5,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/salau_2.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260306_Salau_2,194091
+6,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/cma_1.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260306_CMA_1,394592
+7,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/cma.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/20260306_CMA_2,375949
+8,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/abbaretz.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/ABBARETZ_2,149993
+9,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/abbaretz_3.json,/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/ABBARETZ_3,166518

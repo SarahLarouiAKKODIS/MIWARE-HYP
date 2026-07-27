@@ -338,3 +338,17 @@ def evaluate_classification_model(
 
         plt.show()
 
+
+def subsample_by_class(X, y, max_per_class=30000, seed=42):
+    rng = np.random.default_rng(seed)
+    selected = []
+
+    for cls in np.unique(y):
+        idx = np.where(y == cls)[0]
+        n = min(len(idx), max_per_class)
+        selected.append(rng.choice(idx, size=n, replace=False))
+
+    selected = np.concatenate(selected)
+    rng.shuffle(selected)
+
+    return X[selected], y[selected]

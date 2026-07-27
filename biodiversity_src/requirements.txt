@@ -115,3 +115,9 @@ wcwidth==0.6.0
 webcolors==25.10.0
 webencodings==0.5.1
 websocket-client==1.9.0
+spectral>=0.24
+requests==2.32.5
+xarray==2025.6.1
+netCDF4==1.7.4
+earthengine-api==1.7.34
+geemap==0.37.2

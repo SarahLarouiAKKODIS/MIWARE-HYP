@@ -5,11 +5,15 @@ from pathlib import Path
 import numpy as np
 import json
 from sklearn.model_selection import train_test_split
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
 
 from cuml.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 #import joblib
-from utils import evaluate_classification_model
+from utils import evaluate_classification_model, subsample_by_class
 
 config_path = Path("/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/")
 
@@ -48,10 +52,12 @@ for config_path in config_files:
     with open(config_path) as f:
         config = json.load(f)
 
-    data = np.load(Path(config["Path_res"]) / "Indice_values/dataset_indices.npz")
+    data = np.load(Path(config["Path_res"]) / "Feature_extraction/dataset_indices_for_stress_classif.npz")
 
     X = data["X"]
     y = data["y"]
+
+    print('X.shape', X.shape)
 
     X_list.append(X)
     y_list.append(y)
@@ -85,35 +91,40 @@ from xgboost import XGBClassifier
 # Groupes à utiliser pour le test
 test_group_ids = [6, 7]
 
-# Masques train/test
 train_mask = ~np.isin(groups, test_group_ids)
 test_mask = np.isin(groups, test_group_ids)
 
-# Split
-X_train = X_all[train_mask]
+X_train_all = X_all[train_mask]
 X_test = X_all[test_mask]
 
-y_train = y_all[train_mask]
+y_train_all = y_all[train_mask]
 y_test = y_all[test_mask]
 
-# Groupes réellement utilisés
+X_train, y_train = subsample_by_class(
+    X_train_all,
+    y_train_all,
+    max_per_class=30000
+)
+
+print("y_train :", np.unique(y_train, return_counts=True))
+print("y_test  :", np.unique(y_test, return_counts=True))
+
 train_groups = np.unique(groups[train_mask])
 test_groups = np.unique(groups[test_mask])
 
 print("group_train :", train_groups)
 print("group_test  :", test_groups)
 
-# Encodage labels
-le = LabelEncoder()
+missing_in_train = set(np.unique(y_test)) - set(np.unique(y_train))
+if missing_in_train:
+    print("Classes présentes dans le test mais absentes du train :", missing_in_train)
 
+le = LabelEncoder()
 y_train_enc = le.fit_transform(y_train)
 
-print("labels dans y_train =", np.unique(y_train))
-
-# Poids pour équilibrage
 sample_weights = compute_sample_weight(
     class_weight="balanced",
-    y=y_train
+    y=y_train_enc
 )
 
 # Modèle GPU

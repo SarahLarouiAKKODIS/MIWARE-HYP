@@ -48,7 +48,7 @@ for config_path in config_files:
     with open(config_path) as f:
         config = json.load(f)
 
-    data = np.load(Path(config["Path_res"]) / "Indice_values/dataset_indices.npz")
+    data = np.load(Path(config["Path_res"]) / "Feature_extraction/dataset_indices_for_stress_classif.npz")
 
     X = data["X"]
     y = data["y"]
