@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import rasterio
 
-from utils.enmap_indices_calculation_utils import band_depth
-from utils.enmap_metadata_utils import closest_band_dict
+from ..utils.enmap_indices_calculation_utils import band_depth
+from ..utils.enmap_metadata_utils import closest_band_dict
 
 
 def detect_olivine_bd1050_bd2000_clean(

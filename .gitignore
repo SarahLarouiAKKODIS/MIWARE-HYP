@@ -1,4 +1,5 @@
 # Environnement virtuel
+.venv/
 hypenv/
 bdforet_env/
 biodiv_env/

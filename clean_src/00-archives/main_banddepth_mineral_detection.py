@@ -7,7 +7,7 @@ from mineral_detection.argiles_detection import detect_argiles_bd2200_clean
 from mineral_detection.oxydesFer_detection import detect_iron_oxides_bd900_redness_clean
 from preprocessing.spectral_smoothing import savgol_smooth_and_normalize
 
-Path_res = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/Results/SALSIGNE_crop/"
+Path_res = "/home/starfox/FFE_WS/MIWARE-HYP/Results/20260324_Salsigne_2/"
 clean_wavelengths_csv = Path_res + "enmap_clean_bands_full.csv"
 image_hyperspectrale_cleanbands = Path_res + "image_hyperspectrale_cleanbands.tif"
 
