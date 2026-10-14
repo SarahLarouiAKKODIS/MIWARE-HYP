@@ -305,6 +305,9 @@ def extract_topographic_features(
         output_tif = dem_dir / "topographic_features.tif"
     else:
         output_tif = Path(output_tif)
+        
+    # On crée le dossier AVANT l'enregistrement du fichier
+    output_tif.parent.mkdir(parents=True, exist_ok=True)
 
     out_profile = profile.copy()
     out_profile.update(
@@ -548,8 +551,374 @@ def reproject_climate_to_image_grid(
 
     return dst.astype(np.float32)
 
+from datetime import date
 
 def extract_climate_features(
+    image_tif,
+    path_res,
+    acquisition_date,
+    climate_window=10,
+    output_tif=None,
+):
+    """
+    Extraction de 8 caractéristiques bioclimatiques TerraClimate.
+
+    Paramètres calculés :
+        BIO1  : Température moyenne annuelle
+        BIO4  : Saisonnalité des températures
+        BIO6  : Température minimale du mois le plus froid
+        BIO10 : Température moyenne du trimestre le plus chaud
+        BIO12 : Précipitations annuelles
+        BIO15 : Saisonnalité des précipitations
+        BIO17 : Précipitations du trimestre le plus sec
+        DEF   : Déficit hydrique estival (juin-août)
+
+    Les indicateurs sont calculés annuellement, puis moyennés
+    sur les climate_window années précédant l'acquisition.
+
+    Returns
+    -------
+    climate_cube : np.ndarray
+        Cube (8, rows, cols)
+
+    feature_names : list[str]
+        Noms des caractéristiques climatiques.
+    """
+
+    image_tif = Path(image_tif)
+    path_res = Path(path_res)
+
+    # =====================================================
+    # 1. DATE D'ACQUISITION
+    # =====================================================
+
+    acquisition_date = date.fromisoformat(
+        str(acquisition_date)[:10]
+    )
+
+    end_year = acquisition_date.year
+    start_year = end_year - climate_window
+    last_year = end_year - 1
+
+    print(f"Date d'acquisition : {acquisition_date}")
+    print(f"Période climatique : {start_year}-{last_year}")
+
+    # =====================================================
+    # 2. DOSSIER TERRACLIMATE
+    # =====================================================
+
+    climate_dir = path_res / "TerraClimate"
+    climate_dir.mkdir(parents=True, exist_ok=True)
+
+    # =====================================================
+    # 3. EMPRISE DE L'IMAGE ENMAP
+    # =====================================================
+
+    with rasterio.open(image_tif) as src:
+
+        image_profile = src.profile.copy()
+
+        image_bounds = src.bounds
+        image_crs = src.crs
+
+        west, south, east, north = transform_bounds(
+            image_crs,
+            "EPSG:4326",
+            image_bounds.left,
+            image_bounds.bottom,
+            image_bounds.right,
+            image_bounds.top,
+        )
+
+    # =====================================================
+    # 4. VARIABLES TERRACLIMATE
+    # =====================================================
+
+    variables = ["tmax", "tmin", "ppt", "def"]
+
+    feature_names = [
+        "bio1_mean_annual_temperature",
+        "bio4_temperature_seasonality",
+        "bio6_min_temperature_coldest_month",
+        "bio10_mean_temperature_warmest_quarter",
+        "bio12_annual_precipitation",
+        "bio15_precipitation_seasonality",
+        "bio17_precipitation_driest_quarter",
+        "summer_water_deficit",
+    ]
+
+    feature_lists = {
+        name: [] for name in feature_names
+    }
+
+    # =====================================================
+    # 5. FONCTION : TRIMESTRES GLISSANTS
+    # =====================================================
+
+    def rolling_quarter(da, operation="mean"):
+
+        rolling = da.rolling(
+            time=3,
+            min_periods=3
+        )
+
+        if operation == "mean":
+            return rolling.mean().isel(time=slice(2, None))
+
+        if operation == "sum":
+            return rolling.sum().isel(time=slice(2, None))
+
+        raise ValueError(f"Opération inconnue : {operation}")
+
+    # =====================================================
+    # 6. TRAITEMENT DES ANNÉES
+    # =====================================================
+
+    for year in range(start_year, last_year + 1):
+
+        print(f"\nTraitement année {year}")
+
+        nc_paths = {
+            var: download_terraclimate_file(
+                variable=var,
+                year=year,
+                out_dir=climate_dir,
+            )
+            for var in variables
+        }
+
+        datasets = []
+
+        def load_var(var_name):
+
+            ds = xr.open_dataset(nc_paths[var_name])
+            datasets.append(ds)
+
+            da = ds[var_name]
+
+            da = da.sel(
+                lon=slice(west, east),
+                lat=slice(north, south),
+            )
+
+            # Charger en mémoire avant fermeture des fichiers
+            return da.load()
+
+        try:
+
+            tmax = load_var("tmax")
+            tmin = load_var("tmin")
+            ppt = load_var("ppt")
+            deficit = load_var("def")
+
+            # Conversion des valeurs brutes si nécessaire :
+            # cette fonction suppose que les données chargées
+            # sont déjà en °C et mm.
+
+            tmean = (tmax + tmin) / 2.0
+
+            # =============================================
+            # BIO1 : TEMPÉRATURE MOYENNE ANNUELLE
+            # =============================================
+
+            bio1 = tmean.mean(dim="time")
+
+            # =============================================
+            # BIO4 : SAISONNALITÉ DES TEMPÉRATURES
+            # =============================================
+
+            bio4 = tmean.std(dim="time") * 100.0
+
+            # =============================================
+            # BIO6 : TEMPÉRATURE MINIMALE
+            # DU MOIS LE PLUS FROID
+            # =============================================
+
+            bio6 = tmin.min(dim="time")
+
+            # =============================================
+            # BIO10 : TEMPÉRATURE DU TRIMESTRE
+            # LE PLUS CHAUD
+            # =============================================
+
+            quarterly_temp = rolling_quarter(
+                tmean,
+                operation="mean"
+            )
+
+            bio10 = quarterly_temp.max(dim="time")
+
+            # =============================================
+            # BIO12 : PRÉCIPITATIONS ANNUELLES
+            # =============================================
+
+            bio12 = ppt.sum(dim="time")
+
+            # =============================================
+            # BIO15 : SAISONNALITÉ DES PRÉCIPITATIONS
+            # =============================================
+
+            ppt_mean = ppt.mean(dim="time")
+            ppt_std = ppt.std(dim="time")
+
+            bio15 = xr.where(
+                ppt_mean > 0,
+                (ppt_std / ppt_mean) * 100.0,
+                np.nan
+            )
+
+            # =============================================
+            # BIO17 : PRÉCIPITATIONS DU TRIMESTRE
+            # LE PLUS SEC
+            # =============================================
+
+            quarterly_ppt = rolling_quarter(
+                ppt,
+                operation="sum"
+            )
+
+            bio17 = quarterly_ppt.min(dim="time")
+
+            # =============================================
+            # DÉFICIT HYDRIQUE ESTIVAL
+            # =============================================
+
+            summer_deficit = deficit.sel(
+                time=deficit["time"].dt.month.isin(
+                    [6, 7, 8]
+                )
+            ).sum(dim="time")
+
+            # =============================================
+            # STOCKAGE
+            # =============================================
+
+            annual_features = {
+                "bio1_mean_annual_temperature": bio1,
+                "bio4_temperature_seasonality": bio4,
+                "bio6_min_temperature_coldest_month": bio6,
+                "bio10_mean_temperature_warmest_quarter": bio10,
+                "bio12_annual_precipitation": bio12,
+                "bio15_precipitation_seasonality": bio15,
+                "bio17_precipitation_driest_quarter": bio17,
+                "summer_water_deficit": summer_deficit,
+            }
+
+            for name, da in annual_features.items():
+                feature_lists[name].append(da)
+
+        finally:
+
+            for ds in datasets:
+                ds.close()
+
+    # =====================================================
+    # 7. MOYENNES PLURIANNUELLES
+    # =====================================================
+
+    climate_features = {}
+
+    for name in feature_names:
+
+        climate_features[name] = xr.concat(
+            feature_lists[name],
+            dim="year"
+        ).mean(dim="year")
+
+    # =====================================================
+    # 8. REPROJECTION SUR LA GRILLE ENMAP
+    # =====================================================
+
+    climate_maps = []
+
+    for name in feature_names:
+
+        da = climate_features[name]
+
+        arr = da.values.astype(np.float32)
+
+        lat = da["lat"].values
+        lon = da["lon"].values
+
+        if len(lat) < 2 or len(lon) < 2:
+            raise ValueError(
+                "Emprise TerraClimate trop petite : "
+                "moins de deux pixels sur un axe."
+            )
+
+        lon_res = abs(float(np.diff(lon).mean()))
+        lat_res = abs(float(np.diff(lat).mean()))
+
+        climate_transform = from_bounds(
+            west=float(lon.min()) - lon_res / 2,
+            south=float(lat.min()) - lat_res / 2,
+            east=float(lon.max()) + lon_res / 2,
+            north=float(lat.max()) + lat_res / 2,
+            width=arr.shape[1],
+            height=arr.shape[0],
+        )
+
+        arr_reprojected = reproject_climate_to_image_grid(
+            climate_array=arr,
+            climate_transform=climate_transform,
+            climate_crs="EPSG:4326",
+            image_profile=image_profile,
+        )
+
+        climate_maps.append(arr_reprojected)
+
+    climate_cube = np.stack(
+        climate_maps,
+        axis=0
+    ).astype(np.float32)
+
+    # =====================================================
+    # 9. SAUVEGARDE
+    # =====================================================
+
+    if output_tif is None:
+
+        output_tif = (
+            climate_dir
+            / f"bioclim_features_{start_year}_{last_year}.tif"
+        )
+
+    else:
+        output_tif = Path(output_tif) / f"_{start_year}_{last_year}.tif"
+
+    output_tif.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    out_profile = image_profile.copy()
+
+    out_profile.update(
+        count=climate_cube.shape[0],
+        dtype="float32",
+        nodata=np.nan,
+        compress="lzw",
+    )
+
+    with rasterio.open(
+        output_tif,
+        "w",
+        **out_profile
+    ) as dst:
+
+        dst.write(climate_cube)
+
+        for i, name in enumerate(feature_names, start=1):
+            dst.set_band_description(i, name)
+
+    print("\nCube climatique sauvegardé :", output_tif)
+    print("Shape :", climate_cube.shape)
+    print("Features :", feature_names)
+
+    return climate_cube, feature_names
+
+
+def extract_climate_features_old(
     image_tif,
     path_res,
     end_year,

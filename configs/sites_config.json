@@ -1,0 +1,27 @@
+{
+  "description": "Association des images EnMAP aux sites geographiques. Remplacer les noms de fichiers et les identifiants de site par les valeurs reelles.",
+  "config_dir": "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/ToProcess",
+
+  "train": [
+    {"image_id": 0, "config_file": "Abbaretz_2025-11_1.json", "id_site": "site_A", "date": "2025-11"},
+    {"image_id": 1, "config_file": "Abbaretz_2025-11_2.json", "id_site": "site_B", "date": "2025-11"},
+    {"image_id": 2, "config_file": "Salsigne_2025-11_1.json", "id_site": "site_D", "date": "2025-11"},
+    {"image_id": 3, "config_file": "Salsigne_2025-11_2.json", "id_site": "site_E", "date": "2025-11"},
+    {"image_id": 4, "config_file": "Salsigne_2026-03_1.json", "id_site": "site_D", "date": "2026-03"},
+    {"image_id": 5, "config_file": "Salsigne_2026-03_2.json", "id_site": "site_E", "date": "2026-03"},
+    {"image_id": 6, "config_file": "CMA_2026-06_1.json", "id_site": "site_G", "date": "2026-06"},
+    {"image_id": 7, "config_file": "CMA_2026-06_2.json", "id_site": "site_H", "date": "2026-06"},
+    {"image_id": 8, "config_file": "CMA_2026-09_1.json", "id_site": "site_G", "date": "2026-09"},
+    {"image_id": 9, "config_file": "CMA_2026-09_2.json", "id_site": "site_H", "date": "2026-09"},
+    {"image_id": 10, "config_file": "Salau_2026-06_2.json", "id_site": "site_K", "date": "2026-06"}
+  ],
+  "test": [
+    {"image_id": 11, "config_file": "Abbaretz_2025-11_3.json", "id_site": "site_C", "date": "2025-11"},
+    {"image_id": 12, "config_file": "CMA_2026-06_3.json", "id_site": "site_I", "date": "2026-06"},
+    {"image_id": 13, "config_file": "CMA_2026-09_3.json", "id_site": "site_I", "date": "2026-09"},
+    {"image_id": 14, "config_file": "Salsigne_2025-11_3.json", "id_site": "site_F", "date": "2025-11"},
+    {"image_id": 15, "config_file": "Salsigne_2026-03_3.json", "id_site": "site_F", "date": "2026-03"},
+    {"image_id": 16, "config_file": "Salau_2026-06_1.json", "id_site": "site_J", "date": "2026-06"},
+    {"image_id": 17, "config_file": "inconnue_2026-05_3.json", "id_site": "site_L", "date": "2026-05"}
+  ]
+}

@@ -1,0 +1,378 @@
+#!/usr/bin/env python3
+"""Classification des essences EnMAP avec LightGBM.
+
+- Split TRAIN/TEST défini par sites_config.json (image_id globaux libres).
+- GroupKFold par id_site sur TRAIN uniquement.
+- Permutation importance par fold; comparaison de top-k et pondérations.
+- Réentraînement final et évaluation unique sur TEST.
+
+ATTENTION : les références spectrales ACE, si calculées à partir d'annotations,
+ doivent être construites exclusivement avec les données d'entraînement de
+ chaque fold pour éliminer toute fuite de validation.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.append(str(ROOT))
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from lightgbm import LGBMClassifier
+from sklearn.inspection import permutation_importance
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    accuracy_score,
+    balanced_accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+)
+from sklearn.model_selection import StratifiedGroupKFold, train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.class_weight import compute_sample_weight
+
+from feature_extraction import build_species_classification_dataset
+from display import class_distribution
+from utils import subsample_by_class
+
+# -------------------------- CONFIGURATION --------------------------
+SITES_CONFIG_PATH = Path(
+    "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/sites_config.json"
+)
+EXCLUDED_LABELS = [5, 7, 9, 10, 11, 13, 17, 19, 20, 21]
+MAX_PER_CLASS = 30_000
+N_SPLITS = 3
+PERMUTATION_SAMPLE_SIZE = 10_000
+PERMUTATION_REPEATS = 3
+FEATURE_COUNTS = [5, 10, 15, 20, 25, 31]
+# 0 = pas de pondération ; 1 = pondération balanced ; 0.5 = atténuée.
+WEIGHT_ALPHAS = [0.0, 0.5, 1.0]
+DEVICE_TYPE = "cpu"  # "gpu" uniquement si LightGBM supporte OpenCL
+RANDOM_STATE = 42
+N_JOBS = 8
+
+# Paramètres initiaux (conservateurs). Tester la régularisation ensuite.
+MODEL_PARAMS = dict(
+    objective="multiclass",
+    n_estimators=300,
+    learning_rate=0.05,
+    max_depth=5,
+    num_leaves=31,
+    random_state=RANDOM_STATE,
+    n_jobs=N_JOBS,
+    device_type=DEVICE_TYPE,
+    verbosity=-1,
+)
+
+
+def create_model() -> LGBMClassifier:
+    return LGBMClassifier(**MODEL_PARAMS)
+
+
+def get_weights(y_encoded: np.ndarray, alpha: float):
+    if alpha == 0:
+        return None
+    balanced = compute_sample_weight(class_weight="balanced", y=y_encoded)
+    return balanced ** alpha
+
+
+def assign_site_groups(groups_image, entries):
+    """groups_image = indices LOCAUX selon l'ordre des fichiers chargés.
+
+    Les image_id du JSON sont des identifiants GLOBAUX, non utilisés ici.
+    """
+    group_ids = np.asarray(groups_image, dtype=int)
+    if group_ids.size and (group_ids.min() < 0 or group_ids.max() >= len(entries)):
+        raise ValueError(
+            "Les groupes d'images ne correspondent pas aux positions des "
+            "fichiers chargés : vérifier build_features_dataset()."
+        )
+    return np.asarray([e["id_site"] for e in entries])[group_ids]
+
+
+def dataframe(X, indices, feature_names):
+    """Noms identiques à l'entraînement et à la prédiction."""
+    return pd.DataFrame(X[:, indices], columns=feature_names[indices].tolist())
+
+
+def validation_sample_indices(y, size, seed):
+    """Échantillon de validation stratifié si possible."""
+    n = len(y)
+    if n <= size:
+        return np.arange(n)
+    # La stratification sklearn nécessite assez de pixels par classe et
+    # au moins autant de places dans l’échantillon que de classes.
+    counts = np.unique(y, return_counts=True)[1]
+    can_stratify = counts.min() >= 2 and size >= len(counts) and (n - size) >= len(counts)
+    indices = np.arange(n)
+    _, chosen = train_test_split(
+        indices,
+        test_size=size,
+        random_state=seed,
+        stratify=y if can_stratify else None,
+    )
+    return chosen
+
+
+def check_config(train_entries, test_entries):
+    entries = train_entries + test_entries
+    ids = [e["image_id"] for e in entries]
+    files = [e["config_file"] for e in entries]
+    if len(ids) != len(set(ids)):
+        raise ValueError("image_id global dupliqué dans sites_config.json")
+    if len(files) != len(set(files)):
+        raise ValueError("config_file dupliqué dans sites_config.json")
+    train_sites = {e["id_site"] for e in train_entries}
+    test_sites = {e["id_site"] for e in test_entries}
+    overlap = train_sites & test_sites
+    if overlap:
+        raise ValueError(f"Fuite entre TRAIN et TEST : sites communs {overlap}")
+    if len(train_sites) < N_SPLITS:
+        raise ValueError(f"Il faut au moins {N_SPLITS} sites distincts dans TRAIN")
+
+
+def run():
+    with SITES_CONFIG_PATH.open(encoding="utf-8") as f:
+        config = json.load(f)
+
+    train_entries = sorted(config["train"], key=lambda e: e["image_id"])
+    test_entries = sorted(config["test"], key=lambda e: e["image_id"])
+    check_config(train_entries, test_entries)
+
+    X_train_all, y_train_all, groups_train, names_train = (
+        build_species_classification_dataset.build_features_dataset(
+            config_files=[e["config_file"] for e in train_entries],
+            Path_config=config["config_dir"],
+        )
+    )
+    X_test_all, y_test_all, groups_test, names_test = (
+        build_species_classification_dataset.build_features_dataset(
+            config_files=[e["config_file"] for e in test_entries],
+            Path_config=config["config_dir"],
+        )
+    )
+    if list(names_train) != list(names_test):
+        raise ValueError("Caractéristiques ou ordre différents entre TRAIN et TEST")
+    feature_names = np.asarray(names_train, dtype=str)
+    if len(np.unique(feature_names)) != len(feature_names):
+        raise ValueError("Les noms de caractéristiques doivent être uniques")
+
+    keep_train = ~np.isin(y_train_all, EXCLUDED_LABELS)
+    keep_test = ~np.isin(y_test_all, EXCLUDED_LABELS)
+    X_train_all, y_train_all = X_train_all[keep_train], y_train_all[keep_train]
+    groups_train = groups_train[keep_train]
+    X_test_all, y_test_all = X_test_all[keep_test], y_test_all[keep_test]
+    groups_test = groups_test[keep_test]
+    if not len(y_train_all) or not len(y_test_all):
+        raise ValueError("TRAIN ou TEST vide après exclusion des classes")
+
+    groups_train_site = assign_site_groups(groups_train, train_entries)
+    groups_test_site = assign_site_groups(groups_test, test_entries)
+    print("TRAIN:", X_train_all.shape, "sites:", np.unique(groups_train_site))
+    print("TEST :", X_test_all.shape, "sites:", np.unique(groups_test_site))
+    class_distribution.display_class_distribution(y_train=y_train_all, y_test=y_test_all)
+
+    # Pour l'évaluation finale, toutes les classes du TEST doivent exister dans TRAIN.
+    unknown_test = np.setdiff1d(np.unique(y_test_all), np.unique(y_train_all))
+    if unknown_test.size:
+        raise ValueError(f"Classes du TEST absentes du TRAIN : {unknown_test.tolist()}")
+
+    candidate_k = sorted({min(k, len(feature_names)) for k in FEATURE_COUNTS})
+    if len(feature_names) not in candidate_k:
+        candidate_k.append(len(feature_names))
+    all_importances = []
+    all_scores = []
+    gkf = StratifiedGroupKFold(
+        n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE
+    )
+
+    # La sélection de k et alpha se fait uniquement à partir des folds TRAIN.
+    # Les classes inconnues du FIT sont exclues de la validation du fold.
+    # Attention : les BA des folds peuvent porter sur des classes différentes.
+    for fold, (idx_fit, idx_val) in enumerate(
+        gkf.split(X_train_all, y_train_all, groups=groups_train_site), start=1
+    ):
+        print(f"\n========== FOLD {fold}/{N_SPLITS} ==========")
+        print("Sites fit :", np.unique(groups_train_site[idx_fit]))
+        print("Sites val :", np.unique(groups_train_site[idx_val]))
+
+        X_fit, y_fit = subsample_by_class(
+            X_train_all[idx_fit], y_train_all[idx_fit], max_per_class=MAX_PER_CLASS
+        )
+        X_val, y_val = X_train_all[idx_val], y_train_all[idx_val]
+        # Évaluer uniquement les classes présentes dans le FIT de ce fold.
+        # Les pixels de validation appartenant à des classes inconnues du modèle
+        # sont exclus de TOUTES les métriques et de la permutation importance.
+        fit_classes = np.unique(y_fit)
+        missing = np.setdiff1d(np.unique(y_val), fit_classes)
+        val_mask = np.isin(y_val, fit_classes)
+        n_excluded = int((~val_mask).sum())
+        print("Classes FIT :", fit_classes)
+        print("Classes VAL (avant filtre) :", np.unique(y_val))
+        if missing.size:
+            print(
+                f"ATTENTION fold {fold} : classes ignorées en validation "
+                f"(absentes du FIT) : {missing.tolist()} "
+                f"| pixels exclus : {n_excluded}/{len(y_val)}"
+            )
+        X_val, y_val = X_val[val_mask], y_val[val_mask]
+        if len(y_val) == 0:
+            raise ValueError(
+                f"Fold {fold} : aucun pixel de validation d'une classe "
+                "présente dans le FIT. Impossible de calculer les scores."
+            )
+        print("Classes VAL évaluées :", np.unique(y_val))
+        print(f"Pixels VAL évalués : {len(y_val)}")
+        encoder = LabelEncoder().fit(y_fit)
+        y_fit_enc = encoder.transform(y_fit)
+        y_val_enc = encoder.transform(y_val)
+        all_idx = np.arange(len(feature_names))
+        X_fit_full = dataframe(X_fit, all_idx, feature_names)
+        X_val_full = dataframe(X_val, all_idx, feature_names)
+        sampled_val_idx = validation_sample_indices(
+            y_val_enc, PERMUTATION_SAMPLE_SIZE, RANDOM_STATE + fold
+        )
+
+        # Pour comparer les pondérations équitablement, chaque alpha possède
+        # son propre classement par permutation et ses propres top-k.
+        for alpha in WEIGHT_ALPHAS:
+            weights = get_weights(y_fit_enc, alpha)
+            model_all = create_model()
+            model_all.fit(X_fit_full, y_fit_enc, sample_weight=weights)
+            imp = permutation_importance(
+                model_all,
+                X_val_full.iloc[sampled_val_idx],
+                y_val_enc[sampled_val_idx],
+                scoring="balanced_accuracy",
+                n_repeats=PERMUTATION_REPEATS,
+                random_state=RANDOM_STATE + fold,
+                n_jobs=1,
+            )
+            all_importances.append(
+                pd.DataFrame({
+                    "fold": fold,
+                    "alpha": alpha,
+                    "feature": feature_names,
+                    "importance": imp.importances_mean,
+                    "std": imp.importances_std,
+                })
+            )
+            ranking = np.argsort(-imp.importances_mean, kind="stable")
+            for k in candidate_k:
+                idx = ranking[:k]
+                model = create_model()
+                model.fit(dataframe(X_fit, idx, feature_names), y_fit_enc, sample_weight=weights)
+                pred_enc = model.predict(dataframe(X_val, idx, feature_names))
+                pred = encoder.inverse_transform(pred_enc.astype(int))
+                all_scores.append({
+                    "fold": fold,
+                    "alpha": alpha,
+                    "n_features": k,
+                    "n_val_evaluated": len(y_val),
+                    "n_val_excluded": n_excluded,
+                    "balanced_accuracy": balanced_accuracy_score(y_val, pred),
+                    "macro_f1": f1_score(y_val, pred, average="macro", zero_division=0),
+                    "accuracy": accuracy_score(y_val, pred),
+                })
+                print(
+                    f"Fold {fold} | alpha={alpha:.2f} | k={k:2d} | "
+                    f"BA={all_scores[-1]['balanced_accuracy']:.4f}"
+                )
+
+    scores_df = pd.DataFrame(all_scores)
+    summary = (
+        scores_df.groupby(["alpha", "n_features"], as_index=False)
+        .agg(
+            n_val_evaluated=("n_val_evaluated", "first"),
+            n_val_excluded=("n_val_excluded", "first"),
+            balanced_accuracy_mean=("balanced_accuracy", "mean"),
+            balanced_accuracy_std=("balanced_accuracy", "std"),
+            macro_f1_mean=("macro_f1", "mean"),
+            accuracy_mean=("accuracy", "mean"),
+        )
+        .sort_values(["balanced_accuracy_mean", "macro_f1_mean"], ascending=False)
+    )
+    print("\n=== Scores CV (sites TRAIN uniquement) ===\n", summary.to_string(index=False))
+    best = summary.iloc[0]
+    best_alpha = float(best["alpha"])
+    best_n = int(best["n_features"])
+    print(f"\nChoix CV : alpha={best_alpha:.2f}, nombre de variables={best_n}")
+
+    importances_df = pd.concat(all_importances, ignore_index=True)
+    # Classement FINAL : moyenne des importances des folds, pour l'alpha retenu.
+    mean_imp = (
+        importances_df.loc[importances_df["alpha"] == best_alpha]
+        .groupby("feature", as_index=False)
+        .agg(importance_mean=("importance", "mean"), importance_std_folds=("importance", "std"))
+        .sort_values("importance_mean", ascending=False)
+    )
+    selected_features = mean_imp.head(best_n)["feature"].tolist()
+    selected_idx = np.asarray([np.flatnonzero(feature_names == f)[0] for f in selected_features])
+    print("\n=== Importance moyenne par permutation ===\n", mean_imp.to_string(index=False))
+    print("\nCaractéristiques retenues :", selected_features)
+
+    plt.figure(figsize=(9, 5))
+    for alpha, subset in summary.groupby("alpha"):
+        subset = subset.sort_values("n_features")
+        plt.plot(subset["n_features"], subset["balanced_accuracy_mean"], marker="o", label=f"alpha={alpha:g}")
+    plt.xlabel("Nombre de caractéristiques")
+    plt.ylabel("Balanced accuracy moyenne (CV géographique)")
+    plt.title("LightGBM : sélection des caractéristiques et pondération")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
+    # Entraînement final : toutes les images TRAIN, aucun pixel TEST.
+    X_train_sampled, y_train_sampled = subsample_by_class(
+        X_train_all, y_train_all, max_per_class=MAX_PER_CLASS
+    )
+    label_encoder = LabelEncoder().fit(y_train_all)
+    y_train_encoded = label_encoder.transform(y_train_sampled)
+    weights_final = get_weights(y_train_encoded, best_alpha)
+    X_train_selected = dataframe(X_train_sampled, selected_idx, feature_names)
+    X_test_selected = dataframe(X_test_all, selected_idx, feature_names)
+    species_classifier = create_model()
+    species_classifier.fit(X_train_selected, y_train_encoded, sample_weight=weights_final)
+    y_pred_encoded = species_classifier.predict(X_test_selected)
+    y_species_pred = label_encoder.inverse_transform(y_pred_encoded.astype(int))
+
+    print("\n================ TEST INDÉPENDANT ================")
+    print(f"Accuracy          : {accuracy_score(y_test_all, y_species_pred):.4f}")
+    print(f"Balanced accuracy : {balanced_accuracy_score(y_test_all, y_species_pred):.4f}")
+    print(f"Macro F1          : {f1_score(y_test_all, y_species_pred, average='macro', zero_division=0):.4f}")
+    print(classification_report(
+        y_test_all, y_species_pred, labels=label_encoder.classes_, zero_division=0
+    ))
+    cm = confusion_matrix(y_test_all, y_species_pred, labels=label_encoder.classes_)
+    print("\nMatrice de confusion :\n", cm)
+    cm_norm = confusion_matrix(
+        y_test_all, y_species_pred, labels=label_encoder.classes_, normalize="true"
+    )
+    fig, ax = plt.subplots(figsize=(12, 10))
+    ConfusionMatrixDisplay(
+        confusion_matrix=cm_norm, display_labels=label_encoder.classes_
+    ).plot(ax=ax, cmap="Blues", values_format=".2f", xticks_rotation=45, colorbar=True)
+    plt.title("Matrice de confusion normalisée – LightGBM")
+    plt.tight_layout()
+    plt.show()
+
+    # Analyse des performances par site TEST.
+    print("\n=== Performances par site TEST ===")
+    for site in np.unique(groups_test_site):
+        mask = groups_test_site == site
+        print(
+            f"{site}: pixels={mask.sum()} | "
+            f"accuracy={accuracy_score(y_test_all[mask], y_species_pred[mask]):.4f} | "
+            f"balanced_accuracy={balanced_accuracy_score(y_test_all[mask], y_species_pred[mask]):.4f}"
+        )
+    return species_classifier, selected_features, summary, mean_imp
+
+
+if __name__ == "__main__":
+    run()

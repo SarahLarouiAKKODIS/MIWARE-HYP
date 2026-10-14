@@ -1,0 +1,26 @@
+{
+    "experiment_name": "species_classification_v1",
+    "config_dir": "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/ToProcess",
+    "train_configs": [
+        "Abbaretz_2025-11_1.json", 
+        "Abbaretz_2025-11_2.json",
+        "Abbaretz_2025-11_3.json",
+        "Salsigne_2025-11_1.json",
+        "Salsigne_2025-11_2.json",
+        "Salsigne_2025-11_3.json",
+        "Salsigne_2026-03_1.json",
+        "Salsigne_2026-03_2.json",
+        "Salsigne_2026-03_3.json"
+    ],
+    "test_configs": [
+        "CMA_2026-06_1.json",
+        "CMA_2026-06_2.json", 
+        "CMA_2026-06_3.json", 
+        "CMA_2026-09_1.json", 
+        "CMA_2026-09_2.json", 
+        "CMA_2026-09_3.json", 
+        "Salau_2026-06_1.json", 
+        "Salau_2026-06_2.json", 
+        "inconnue_2026-05_3.json"
+    ]
+}

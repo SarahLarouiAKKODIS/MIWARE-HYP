@@ -19,3 +19,7 @@ __pycache__/
 # Fichiers système
 .DS_Store
 Thumbs.db
+
+# Données Sentinel-2
+biodiversity_src/sentinel-2/data/
+biodiversity_src/sentinel-2/data_selected/

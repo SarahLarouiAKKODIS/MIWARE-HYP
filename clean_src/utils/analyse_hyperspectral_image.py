@@ -212,3 +212,70 @@ def analyze_rescaled_cube_with_wavelengths(
         "suspicious_band_indices": suspicious_df["band_index"].astype(int).tolist(),
         "suspicious_band_ids": suspicious_df["band_id"].astype(int).tolist(),
     }
+
+
+
+from pathlib import Path
+import rasterio
+import numpy as np
+
+
+def check_input_raster_validity(
+    raster_path: str | Path,
+) -> None:
+    """
+    Vérifie que le raster contient au moins une valeur valide.
+
+    Si toutes les valeurs sont NoData / NaN / Inf, le pipeline est
+    immédiatement interrompu.
+
+    Parameters
+    ----------
+    raster_path : str | Path
+        Raster d'entrée à contrôler.
+
+    Raises
+    ------
+    RuntimeError
+        Si aucune donnée valide n'est trouvée.
+    """
+
+    raster_path = Path(raster_path)
+
+    if not raster_path.exists():
+        raise FileNotFoundError(
+            f"Image d'entrée introuvable : {raster_path}"
+        )
+
+    with rasterio.open(raster_path) as src:
+
+        nodata = src.nodata
+
+        for band_id in range(1, src.count + 1):
+
+            band = src.read(band_id)
+
+            valid = np.isfinite(band)
+
+            if nodata is not None:
+                valid &= band != nodata
+
+            # Une seule valeur valide suffit
+            if valid.any():
+                print(
+                    f"[OK] Image d'entrée valide : {raster_path.name}"
+                )
+                return
+
+    # Aucune valeur valide trouvée dans aucune bande
+    raise RuntimeError(
+        "\n"
+        "============================================================\n"
+        "[ERREUR] IMAGE D'ENTRÉE CORROMPUE\n"
+        "============================================================\n"
+        f"Fichier : {raster_path}\n"
+        f"L'image est entièrement remplie de NoData ({nodata}).\n"
+        "Aucune donnée spectrale valide n'a été détectée.\n"
+        "Le pipeline est arrêté.\n"
+        "============================================================"
+    )

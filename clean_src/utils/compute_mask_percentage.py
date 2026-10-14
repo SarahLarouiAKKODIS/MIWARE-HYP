@@ -158,6 +158,8 @@ def run_mask_analysis_from_config(
 
     print("\n=== Analyse des masques ===\n")
 
+    Path_data = Path(config["Path_data"])
+
     # -----------------------------
     # Masques binaires
     # -----------------------------
@@ -166,7 +168,7 @@ def run_mask_analysis_from_config(
             print(f"[WARN] Clé absente dans le config : {key}\n")
             continue
 
-        mask_path = Path(config[key])
+        mask_path = Path_data / Path(config[key])
 
         try:
             pct, n_active, n_valid = compute_mask_percentage(
@@ -207,7 +209,7 @@ def run_mask_analysis_from_config(
             print(f"[WARN] Clé absente dans le config : {key}\n")
             continue
 
-        mask_path = Path(config[key])
+        mask_path = Path_data / Path(config[key])
 
         try:
             stats = compute_mask_label_percentages(
@@ -254,5 +256,5 @@ def run_mask_analysis_from_config(
 # MAIN
 # -----------------------------
 if __name__ == "__main__":
-    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/abbaretz.json"  # à adapter
+    config_path = "/home/sarah.laroui/Bureau/MIWARE-HYP/Python_code/configs/ToProcess/dims_op_oc_oc-en_703674123_1_2.json"  # à adapter
     run_mask_analysis_from_config(config_path)

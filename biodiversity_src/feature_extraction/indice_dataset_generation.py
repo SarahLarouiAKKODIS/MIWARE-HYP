@@ -33,53 +33,53 @@ def build_and_save_datasets(
     #output_group_mask_path = Path(output_group_mask_path)
 
     #stress_class_names = config_forest["STRESS_CLASS_NAMES"]
-    stress_class_names = {int(k): v for k, v in config_forest["STRESS_CLASS_NAMES"].items()}
+    # stress_class_names = {int(k): v for k, v in config_forest["STRESS_CLASS_NAMES"].items()}
 
-    # 1) Reclassification GT -> classes de stress
-    stress_mask = reclassify_gt_to_stress_classes(
-        gt_mask=gt_mask,
-        stress_groups=config_forest["STRESS_GROUPS"],
-        class_map=config_forest["CLASS_MAP"],
-        excluded_labels=excluded_original_labels,
-    )
+    # # 1) Reclassification GT -> classes de stress
+    # stress_mask = reclassify_gt_to_stress_classes(
+    #     gt_mask=gt_mask,
+    #     stress_groups=config_forest["STRESS_GROUPS"],
+    #     class_map=config_forest["CLASS_MAP"],
+    #     excluded_labels=excluded_original_labels,
+    # )
 
-     # ============================================================
-    # PLOT
-    # ============================================================
+    #  # ============================================================
+    # # PLOT
+    # # ============================================================
 
-    plot_gt_and_stress_masks(
-        gt_mask=gt_mask,
-        stress_mask=stress_mask,
-        class_map= config_forest["CLASS_MAP"],
-        stress_class_names= stress_class_names,
-        output_path=output_figure_path,
-    )
+    # plot_gt_and_stress_masks(
+    #     gt_mask=gt_mask,
+    #     stress_mask=stress_mask,
+    #     class_map= config_forest["CLASS_MAP"],
+    #     stress_class_names= stress_class_names,
+    #     output_path=output_figure_path,
+    # )
 
-    save_mask(output_group_mask_path, stress_mask, profile)
-    print("Masque de classes de stress sauvegardé :", output_group_mask_path)
+    # save_mask(output_group_mask_path, stress_mask, profile)
+    # print("Masque de classes de stress sauvegardé :", output_group_mask_path)
 
    
-    # 6) Extraction dataset X/y for stress classification
+    # # 6) Extraction dataset X/y for stress classification
 
-    X_st, y_st, rows, cols = extract_pixels(
-        indices_dict=indices,
-        target_mask=stress_mask,
-        valid_pixels_mask=enmap_valid_mask,
-        ignore_labels=ignore_labels,
-    )
+    # X_st, y_st, rows, cols = extract_pixels(
+    #     indices_dict=indices,
+    #     target_mask=stress_mask,
+    #     valid_pixels_mask=enmap_valid_mask,
+    #     ignore_labels=ignore_labels,
+    # )
 
-    print("\nForme de X stress :", X_st.shape)
-    print("Forme de y stress :", y_st.shape)
+    # print("\nForme de X stress :", X_st.shape)
+    # print("Forme de y stress :", y_st.shape)
 
-    dataset_path = out_dataset_dir/ "dataset_indices_for_stress_classif.npz"
+    # dataset_path = out_dataset_dir/ "dataset_indices_for_stress_classif.npz"
 
-    np.savez(
-        dataset_path,
-        X=X_st,
-        y=y_st,
-    )
+    # np.savez(
+    #     dataset_path,
+    #     X=X_st,
+    #     y=y_st,
+    # )
 
-    print("Dataset indices pour la classification de l'état de stress, sauvegardé :", dataset_path)
+    # print("Dataset indices pour la classification de l'état de stress, sauvegardé :", dataset_path)
 
      # 6) Extraction dataset X/y for stress classification
 
@@ -110,5 +110,5 @@ def build_and_save_datasets(
 
     print("Dataset indices pour la classification des espèces végétales sauvegardé :", dataset_path)
 
-    return X_st, y_sp, y_st
+    #return indices_cube, y_sp, y_st
 

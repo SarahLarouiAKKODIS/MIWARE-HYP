@@ -1,0 +1,26 @@
+{
+  "CLASS_FIELD": "ESSENCE",
+  "CLASS_MAP": {
+    "Sapin, épicéa": 1,
+    "Châtaignier": 2,
+    "Chênes décidus": 3,
+    "Chênes sempervirents": 4,
+    "Conifères": 5,
+    "Douglas": 6,
+    "Feuillus": 7,
+    "Hêtre": 8,
+    "Mixte": 9,
+    "NC": 10,
+    "NR": 11,
+    "Peuplier": 12,
+    "Pin autre": 13,
+    "Pin d'Alep": 14,
+    "Pin laricio, pin noir": 15,
+    "Pin sylvestre": 16,
+    "Pins mélangés": 17,
+    "Pin maritime" : 18,
+    "Pin à crochets, pin cembro" : 19,
+    "Mélèze" : 20,
+    "Robinier": 21
+  }
+}

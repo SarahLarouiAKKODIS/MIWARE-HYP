@@ -135,6 +135,54 @@ def compute_best_sam_ace_species_from_reference_csvs(
 
     bands, rows, cols = img.shape
 
+    #############################################################################
+
+    # print("Shape image :", img.shape)
+
+    # finite_per_band = np.isfinite(img).sum(axis=(1, 2))
+
+    # print("Pixels par bande :", rows * cols)
+    # print("Bandes totalement NaN :", np.where(finite_per_band == 0)[0] + 1)
+    # print("Nombre de bandes totalement NaN :", np.sum(finite_per_band == 0))
+
+    # print(
+    #     "Pixels valides sur toutes les bandes :",
+    #     np.isfinite(img).all(axis=0).sum()
+    # )
+
+    # print(
+    #     "Pixels ayant au moins une bande valide :",
+    #     np.isfinite(img).any(axis=0).sum()
+    # )
+
+    # finite_count = np.isfinite(img).sum(axis=0)
+
+    # # On regarde uniquement les pixels qui ont au moins une donnée
+    # veg = finite_count > 0
+
+    # values = finite_count[veg]
+
+    # print("Nombre pixels végétation :", values.size)
+    # print("Min bandes valides       :", values.min())
+    # print("Max bandes valides       :", values.max())
+    # print("Médiane                   :", np.median(values))
+    # print("Moyenne                   :", values.mean())
+
+    # values_unique, counts = np.unique(values, return_counts=True)
+
+    # print("\nDistribution :")
+
+    # for n, count in zip(values_unique, counts):
+    #     print(
+    #         f"{n:3d}/213 bandes : "
+    #         f"{count:5d} pixels "
+    #         f"({100 * count / values.size:.2f} %)"
+    #     )
+
+    
+    #############################################################################
+
+
     valid = np.isfinite(img).all(axis=0)
 
     if valid_pixels_mask is not None:
@@ -396,6 +444,25 @@ def compute_final_sam_ace_from_reference_csvs(
             )
 
         valid &= valid_pixels_mask
+
+
+    print("Shape image :", img.shape)
+
+    finite_per_band = np.isfinite(img).sum(axis=(1, 2))
+
+    print("Pixels par bande :", rows * cols)
+    print("Bandes totalement NaN :", np.where(finite_per_band == 0)[0] + 1)
+    print("Nombre de bandes totalement NaN :", np.sum(finite_per_band == 0))
+
+    print(
+        "Pixels valides sur toutes les bandes :",
+        np.isfinite(img).all(axis=0).sum()
+    )
+
+    print(
+        "Pixels ayant au moins une bande valide :",
+        np.isfinite(img).any(axis=0).sum()
+    )
 
     if not np.any(valid):
         raise ValueError("Aucun pixel valide dans l'image hyperspectrale.")
